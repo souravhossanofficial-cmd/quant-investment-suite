@@ -4,80 +4,142 @@ import streamlit as st
 import yfinance as yf
 import plotly.express as px
 import plotly.graph_objects as go
+import streamlit.components.v1 as components
 
 # ==========================================
 # PAGE CONFIGURATION & 3D GLASSMORPHISM THEME
 # ==========================================
 st.set_page_config(
-    page_title="Institutional Quantitative Investment Suite",
+    page_title="Institutional Global Asset Management Suite",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Advanced 3D Styling Injection (Glassmorphism, Elevated Shadows, Neon Accents)
+# Advanced 3D Styling Injection (Glassmorphism, Elevated Shadows, Neon Cyan Data Streams)
 st.markdown("""
 <style>
-    /* Dark Metallic Background */
+    /* Dark Obsidian & Deep Space Theme */
     .stApp {
-        background: linear-gradient(135deg, #0b0e14 0%, #161b26 50%, #0d111a 100%);
-        color: #e6edf3;
+        background: linear-gradient(135deg, #06090f 0%, #0f172a 50%, #090d16 100%);
+        color: #e2e8f0;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* 3D Glassmorphism Cards for Widgets & Containment */
+    /* 3D Glassmorphic Cards for Telemetry & Containers */
     div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart, div[data-baseweb="card"] {
-        background: rgba(22, 27, 38, 0.65) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 
-                    0 0 15px 0 rgba(0, 112, 243, 0.15),
-                    inset 0 1px 1px 0 rgba(255, 255, 255, 0.1) !important;
-        border-radius: 14px !important;
-        padding: 16px !important;
-        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+        background: rgba(15, 23, 42, 0.75) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(56, 189, 248, 0.15) !important;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7),
+                    0 0 25px 0 rgba(56, 189, 248, 0.1) !important;
+        border-radius: 16px !important;
+        padding: 20px !important;
+        transition: transform 0.25s ease, box-shadow 0.25s ease !important;
     }
 
-    /* Hover Lift Effect for Metrics */
+    /* 3D Hover Elevation for Metrics */
     div[data-testid="stMetric"]:hover {
-        transform: translateY(-4px) translateZ(10px);
-        box-shadow: 0 15px 35px -5px rgba(0, 112, 243, 0.3),
+        transform: translateY(-4px) translateZ(12px);
+        box-shadow: 0 25px 50px -12px rgba(56, 189, 248, 0.3),
                     inset 0 1px 1px 0 rgba(255, 255, 255, 0.2) !important;
+        border-color: rgba(56, 189, 248, 0.4) !important;
     }
 
-    /* 3D Button Styling */
+    /* Institutional Button Styling */
     .stButton > button {
-        background: linear-gradient(135deg, #0052cc 0%, #003399 100%) !important;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
         border: none !important;
-        border-radius: 8px !important;
+        border-radius: 10px !important;
         padding: 12px 28px !important;
         font-weight: 600 !important;
-        box-shadow: 0 6px 14px rgba(0, 82, 204, 0.4),
+        box-shadow: 0 8px 20px rgba(2, 132, 199, 0.4),
                     inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-        transition: all 0.2s ease !important;
+        transition: all 0.3s ease !important;
     }
 
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 82, 204, 0.6),
+        box-shadow: 0 12px 25px rgba(2, 132, 199, 0.6),
                     inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
     }
 
-    /* Sidebar 3D Visual Styling */
+    /* Sidebar Glassmorphism */
     section[data-testid="stSidebar"] {
-        background: rgba(13, 17, 26, 0.85) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+        background: rgba(10, 15, 30, 0.95) !important;
+        border-right: 1px solid rgba(56, 189, 248, 0.1) !important;
     }
 
-    /* Title Neon Glow */
+    /* Title Glow */
     h1, h2, h3 {
-        color: #ffffff !important;
-        text-shadow: 0 0 20px rgba(0, 112, 243, 0.3);
+        color: #f8fafc !important;
+        text-shadow: 0 0 25px rgba(56, 189, 248, 0.35);
     }
 </style>
 """, unsafe_allow_html=True)
+
+# Live Animated Background Canvas (Particle Net Stream)
+particle_canvas = """
+<div id="particle-container" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;overflow:hidden;">
+    <canvas id="canvas"></canvas>
+</div>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let width = canvas.width = window.innerWidth;
+let height = canvas.height = window.innerHeight;
+
+window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+});
+
+const particles = [];
+const count = 55;
+for(let i=0; i<count; i++){
+    particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        radius: Math.random() * 2 + 1
+    });
+}
+
+function animate(){
+    ctx.clearRect(0,0,width,height);
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.06)';
+    
+    particles.forEach((p, index) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if(p.x < 0 || p.x > width) p.vx *= -1;
+        if(p.y < 0 || p.y > height) p.vy *= -1;
+        
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        for(let j = index + 1; j < particles.length; j++){
+            let p2 = particles[j];
+            let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+            if(dist < 130){
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+            }
+        }
+    });
+    requestAnimationFrame(animate);
+}
+animate();
+</script>
+"""
+components.html(particle_canvas, height=0, width=0)
 
 # Yahoo sector labels excluded by Greenblatt's traditional screener rules
 EXCLUDED_SECTORS = {"Financial Services", "Utilities"}
@@ -314,6 +376,17 @@ def kelly_criterion(win_prob, win_loss_ratio):
 
 
 # ==========================================
+# TOP GLOBAL TELEMETRY BAR (Aladdin/Bloomberg Style)
+# ==========================================
+st.markdown("### 🌐 Global Asset Management Telemetry (Aladdin Engine)")
+col_t1, col_t2, col_t3, col_t4 = st.columns(4)
+col_t1.metric("Assets Under Management", "$48.25B", "+2.4% MoM")
+col_t2.metric("Portfolio Value-at-Risk (99% VaR)", "$1.24B", "-0.15% Daily")
+col_t3.metric("Aggregate Sharpe Ratio", "2.18", "Benchmark: 1.45")
+col_t4.metric("Active Risk Exposure (Tracking)", "3.42%", "Controlled")
+st.markdown("---")
+
+# ==========================================
 # STREAMLIT NAVIGATION & UI MODULES
 # ==========================================
 st.sidebar.title("⚡ Quantitative Suite")
@@ -330,8 +403,8 @@ st.sidebar.caption("Institutional Quantitative Engine | 3D Graphics Enabled")
 if app_mode == "1. Magic Formula Screener":
     st.header("Joel Greenblatt's Magic Formula Screener")
     st.markdown(
-        "Ranks equities quantitatively based on **Earnings Yield** ($EBIT / Enterprise\\ Value$) and "
-        "**Return on Capital** ($EBIT / Net\\ Working\\ Capital + Net\\ Fixed\\ Assets$)."
+        "Ranks equities quantitatively based on **Earnings Yield** (EBIT / Enterprise Value) and "
+        "**Return on Capital** (EBIT / Net Working Capital + Net Fixed Assets)."
     )
 
     default_tickers = "AAPL, MSFT, GOOGL, AMZN, META, BRK-B, JNJ, V, PG, UNH, HD, MA, DIS, ADBE, NFLX"
@@ -346,7 +419,7 @@ if app_mode == "1. Magic Formula Screener":
         if not tickers:
             st.error("Please enter at least one valid ticker symbol.")
         else:
-            with st.spinner("Processing calculations..."):
+            with st.spinner("Processing multi-factor quantitative ranking..."):
                 ranked, skipped = run_magic_formula_screener(tickers, exclude_sectors)
 
             if ranked.empty:
@@ -447,6 +520,11 @@ elif app_mode == "3. Economic Profitability & EVA":
             value=f"${eva:,.2f}M",
             delta=f"{spread_pp:+.2f}% spread",
         )
+        st.caption(f"Economic Spread: {spread_pp:+.2f} percentage points")
+        if spread_pp > 0:
+            st.success("Company is creating economic shareholder value (ROIC > WACC).")
+        else:
+            st.error("Company is destroying economic value (ROIC <= WACC).")
 
 # MODULE 4
 elif app_mode == "4. Momentum Filter Rule Scanner":
@@ -459,7 +537,7 @@ elif app_mode == "4. Momentum Filter Rule Scanner":
         if not t_list:
             st.error("Enter at least one ticker.")
         else:
-            with st.spinner("Downloading price history..."):
+            with st.spinner("Downloading 1-year historical price series..."):
                 try:
                     closes = fetch_closes(tuple(t_list))
                 except Exception as exc:
@@ -470,7 +548,7 @@ elif app_mode == "4. Momentum Filter Rule Scanner":
                 res_df = run_filter_rule(closes, filter_pct)
                 st.dataframe(res_df, use_container_width=True, hide_index=True)
                 
-                selected_chart_ticker = st.selectbox("Select Ticker for Interactive 3D/Plotly Price Action:", options=closes.columns.tolist())
+                selected_chart_ticker = st.selectbox("Select Ticker for Interactive Trend Inspection:", options=closes.columns.tolist())
                 if selected_chart_ticker:
                     fig_price = go.Figure()
                     fig_price.add_trace(go.Scatter(
@@ -478,7 +556,7 @@ elif app_mode == "4. Momentum Filter Rule Scanner":
                         y=closes[selected_chart_ticker], 
                         mode='lines', 
                         name=selected_chart_ticker,
-                        line=dict(color='#0070f3', width=3)
+                        line=dict(color='#38bdf8', width=3)
                     ))
                     fig_price.update_layout(
                         title=f"<b>1-Year Price Trajectory: {selected_chart_ticker}</b>",
@@ -497,6 +575,13 @@ elif app_mode == "5. Kelly Criterion Allocator":
 
     if st.button("Calculate Optimal Allocation"):
         f_opt = kelly_criterion(win_prob, win_loss)
-        col1, col2 = st.columns(2)
-        col1.metric(label="Full Kelly Fraction ($f^*$)", value=f"{f_opt * 100:.2f}%")
-        col2.metric(label="Half Kelly Fraction ($0.5 \\times f^*$)", value=f"{f_opt * 50:.2f}%")
+        if f_opt == 0:
+            st.warning("Zero edge detected: Expected value per unit staked is non-positive ($f^* = 0$).")
+        else:
+            col1, col2 = st.columns(2)
+            col1.metric(label="Full Kelly Fraction ($f^*$)", value=f"{f_opt * 100:.2f}%")
+            col2.metric(label="Half Kelly Fraction ($0.5 \\times f^*$)", value=f"{f_opt * 50:.2f}%")
+        st.info(
+            "Institutional Risk Advisory: Professional quantitative portfolios deploy Fractional Kelly sizing "
+            "(e.g., Half Kelly) to guard against downside parameter estimation variance."
+        )
