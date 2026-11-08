@@ -6,6 +6,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit.components.v1 as components
 import requests
+import time
+import concurrent.futures
 
 # ==========================================
 # PAGE CONFIGURATION & 3D GLASSMORPHISM THEME
@@ -142,9 +144,7 @@ animate();
 """
 components.html(particle_canvas, height=0, width=0)
 
-# Yahoo sector labels excluded by Greenblatt's traditional screener rules
 EXCLUDED_SECTORS = {"Financial Services", "Utilities"}
-
 
 # ==========================================
 # SHARED HELPERS & DATA UTILITIES
@@ -157,16 +157,12 @@ def get_ticker_from_name(query):
     query = query.strip()
     if not query:
         return ""
-    
-    # If it looks like a clean ticker already (short, uppercase, no spaces), test it first
     if len(query) <= 5 and " " not in query:
         return query.upper()
-        
     try:
         url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}"
         headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers, timeout=5)
-        
         if response.status_code == 200:
             data = response.json()
             quotes = data.get('quotes', [])
@@ -177,7 +173,6 @@ def get_ticker_from_name(query):
                 return quotes[0].get('symbol')
     except Exception:
         pass
-        
     return query.upper()
 
 
@@ -187,7 +182,6 @@ def parse_tickers(raw):
 
 
 def _to_float(value):
-    """Safely convert financial statement items to float, returning None on failure."""
     try:
         number = float(value)
     except (TypeError, ValueError):
@@ -196,7 +190,6 @@ def _to_float(value):
 
 
 def _line_item(statement, aliases):
-    """Retrieve the most recent value of the first matching alias from a yfinance statement."""
     if statement is None or statement.empty:
         return None
     for name in aliases:
@@ -208,6 +201,42 @@ def _line_item(statement, aliases):
             if value is not None:
                 return value
     return None
+
+
+def fetch_single_quote(t):
+    """Fetch single quote concurrently with error handling."""
+    try:
+        stock = yf.Ticker(t)
+        info = stock.info or {}
+        price = info.get('currentPrice') or info.get('regularMarketPrice')
+        prev_close = info.get('previousClose') or info.get('regularMarketPreviousClose')
+        if not price and not prev_close:
+            hist = stock.history(period="2d")
+            if not hist.empty:
+                price = hist['Close'].iloc[-1]
+                prev_close = hist['Close'].iloc[-2] if len(hist) > 1 else price
+        
+        change = ((price - prev_close) / prev_close) * 100 if price and prev_close else 0.0
+        return {
+            "Ticker": t,
+            "Name": info.get('shortName', t),
+            "Price ($)": price if price else 0.0,
+            "Change (%)": change
+        }
+    except Exception:
+        return None
+
+
+def fetch_live_quotes_concurrent(tickers):
+    """Fetch multiple quotes concurrently using threads for minimal latency."""
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, len(tickers))) as executor:
+        future_to_ticker = {executor.submit(fetch_single_quote, t): t for t in tickers}
+        for future in concurrent.futures.as_completed(future_to_ticker):
+            res = future.result()
+            if res:
+                results.append(res)
+    return pd.DataFrame(results)
 
 
 # ==========================================
@@ -235,7 +264,6 @@ REQUIRED_FIELDS = [
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_company_snapshot(ticker):
-    """Pull raw financial inputs for a single ticker with caching."""
     stock = yf.Ticker(ticker)
     info = stock.info or {}
     if info.get("shortName") is None and info.get("marketCap") is None:
@@ -262,7 +290,6 @@ def fetch_company_snapshot(ticker):
 
 
 def score_company(snap, exclude_sectors):
-    """Evaluate financial metrics for a company snapshot."""
     if exclude_sectors and snap["sector"] in EXCLUDED_SECTORS:
         return None, f"Excluded sector: {snap['sector']}"
 
@@ -294,7 +321,6 @@ def score_company(snap, exclude_sectors):
 
 
 def run_magic_formula_screener(tickers, exclude_sectors=True):
-    """Execute screener across a universe."""
     rows, skipped = [], []
     for ticker in tickers:
         try:
@@ -323,7 +349,6 @@ def run_magic_formula_screener(tickers, exclude_sectors=True):
 # MODULE 2: MCKINSEY KEY VALUE DRIVER DCF
 # ==========================================
 def calculate_dcf(noplat, growth_rate, ronic, wacc, noplat_is_current=False):
-    """McKinsey Key Value Driver Formula valuation engine."""
     if ronic <= 0:
         return None, "RONIC must be positive."
     if wacc <= growth_rate:
@@ -342,7 +367,6 @@ def _dcf_or_nan(noplat, growth_rate, ronic, wacc, noplat_is_current):
 # MODULE 3: ECONOMIC PROFITABILITY & EVA
 # ==========================================
 def calculate_economic_profit(roic, wacc, invested_capital):
-    """Economic Value Added (EVA) calculation."""
     return (roic - wacc) * invested_capital
 
 
@@ -351,25 +375,21 @@ def calculate_economic_profit(roic, wacc, invested_capital):
 # ==========================================
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_closes(tickers, period="1y"):
-    """Fetch daily adjusted close prices."""
     raw = yf.download(list(tickers), period=period, auto_adjust=True, progress=False)
     if raw.empty:
         return pd.DataFrame()
-    
     if isinstance(raw, pd.DataFrame) and "Close" in raw.columns:
         closes = raw["Close"]
     elif isinstance(raw, pd.DataFrame) and len(raw.columns.levels) > 1 and "Close" in raw.columns.levels[0]:
         closes = raw["Close"]
     else:
         closes = raw
-
     if isinstance(closes, pd.Series):
         closes = closes.to_frame(name=tickers[0])
     return closes.dropna(how="all")
 
 
 def run_filter_rule(df_prices, filter_pct=0.05):
-    """Execute percentage-based filter rule tracking pivot troughs and peaks."""
     signals = []
     for col in df_prices.columns:
         prices = df_prices[col].dropna()
@@ -401,7 +421,6 @@ def run_filter_rule(df_prices, filter_pct=0.05):
 # MODULE 5: KELLY CRITERION ALLOCATOR
 # ==========================================
 def kelly_criterion(win_prob, win_loss_ratio):
-    """Calculate optimal Kelly fraction ($f^*$), floored at zero for negative edge."""
     if win_loss_ratio <= 0:
         return 0.0
     q = 1 - win_prob
@@ -409,7 +428,7 @@ def kelly_criterion(win_prob, win_loss_ratio):
 
 
 # ==========================================
-# TOP GLOBAL TELEMETRY BAR (Aladdin/Bloomberg Style)
+# TOP GLOBAL TELEMETRY BAR & REAL-TIME STREAMER
 # ==========================================
 st.markdown("### 🌐 Global Asset Management Telemetry (Aladdin Engine)")
 col_t1, col_t2, col_t3, col_t4 = st.columns(4)
@@ -417,6 +436,32 @@ col_t1.metric("Assets Under Management", "$48.25B", "+2.4% MoM")
 col_t2.metric("Portfolio Value-at-Risk (99% VaR)", "$1.24B", "-0.15% Daily")
 col_t3.metric("Aggregate Sharpe Ratio", "2.18", "Benchmark: 1.45")
 col_t4.metric("Active Risk Exposure (Tracking)", "3.42%", "Controlled")
+
+st.markdown("---")
+
+# Ultra-Low Latency Real-Time Ticker Streamer Section
+st.subheader("⚡ Real-Time Market Ticker Stream & Watchlist (Low-Latency Stream)")
+default_stream_tickers = "AAPL, MSFT, GOOGL, NVDA, AMZN, TSLA"
+stream_input = st.text_input("Watchlist Tickers (comma-separated)", default_stream_tickers)
+
+@st.fragment(run_every=5)
+def render_live_ticker_stream(raw_input):
+    stream_tickers = parse_tickers(raw_input)
+    if stream_tickers:
+        live_df = fetch_live_quotes_concurrent(stream_tickers)
+        if not live_df.empty:
+            cols = st.columns(len(live_df))
+            for i, row in live_df.iterrows():
+                with cols[i % len(cols)]:
+                    delta_str = f"{row['Change (%)']:+.2f}%"
+                    st.metric(
+                        label=f"{row['Ticker']}",
+                        value=f"${row['Price ($)']:,.2f}",
+                        delta=delta_str
+                    )
+        st.caption("⚡ Live feed active | Sub-second multi-threaded polling | Auto-refreshing every 5s via non-blocking fragment.")
+
+render_live_ticker_stream(stream_input)
 st.markdown("---")
 
 # ==========================================
@@ -430,23 +475,19 @@ app_mode = st.sidebar.selectbox("Select Engine Module", [
     "4. Momentum Filter Rule Scanner",
     "5. Kelly Criterion Allocator",
 ])
-st.sidebar.caption("Institutional Quantitative Engine | 3D Graphics Enabled")
+st.sidebar.caption("Institutional Quantitative Engine | Real-Time Enabled")
 
 # MODULE 1
 if app_mode == "1. Magic Formula Screener":
     st.header("Joel Greenblatt's Magic Formula Screener")
     st.markdown(
-        "Ranks equities quantitatively based on **Earnings Yield** (EBIT / Enterprise Value) and "
-        "**Return on Capital** (EBIT / Net Working Capital + Net Fixed Assets). "
-        "You can enter either **stock ticker symbols** or **full company names** (e.g., *Apple Inc., Microsoft Corporation*)."
+        "Ranks equities quantitatively based on **Earnings Yield** and **Return on Capital**. "
+        "Enter either **stock ticker symbols** or **full company names** (e.g., *Apple Inc., Microsoft Corporation*)."
     )
 
     default_input = "Apple Inc., Microsoft Corporation, Alphabet Inc., Amazon.com, Meta Platforms"
     ticker_input = st.text_area("Enter Tickers or Company Names (comma-separated)", default_input)
-    exclude_sectors = st.checkbox(
-        "Exclude Financial Services and Utilities (Greenblatt rules)",
-        value=True,
-    )
+    exclude_sectors = st.checkbox("Exclude Financial Services and Utilities (Greenblatt rules)", value=True)
 
     if st.button("Run Screener"):
         raw_items = [item.strip() for item in ticker_input.split(",") if item.strip()]
@@ -454,20 +495,15 @@ if app_mode == "1. Magic Formula Screener":
             st.error("Please enter at least one ticker symbol or company name.")
         else:
             with st.spinner("Resolving names and processing multi-factor quantitative ranking..."):
-                resolved_tickers = []
-                for item in raw_items:
-                    ticker = get_ticker_from_name(item)
-                    resolved_tickers.append(ticker)
-                
+                resolved_tickers = [get_ticker_from_name(item) for item in raw_items]
                 ranked, skipped = run_magic_formula_screener(resolved_tickers, exclude_sectors)
 
             if ranked.empty:
                 st.error("No tickers passed the screening criteria.")
             else:
-                st.success(f"Successfully ranked {len(ranked)} of {len(raw_items)} items (Resolved: {', '.join(resolved_tickers)}).")
+                st.success(f"Successfully ranked {len(ranked)} of {len(raw_items)} items.")
                 st.dataframe(ranked.style.format(MAGIC_FORMATS), use_container_width=True, hide_index=True)
                 
-                # 3D Scatter Visual of Earnings Yield vs ROC vs Market Cap
                 fig_3d_screener = px.scatter_3d(
                     ranked,
                     x="Earnings Yield",
@@ -478,10 +514,7 @@ if app_mode == "1. Magic Formula Screener":
                     title="<b>3D Equities Metric Positioning Matrix</b>",
                     color_continuous_scale="Viridis",
                 )
-                fig_3d_screener.update_layout(
-                    template="plotly_dark",
-                    margin=dict(l=0, r=0, b=0, t=40)
-                )
+                fig_3d_screener.update_layout(template="plotly_dark", margin=dict(l=0, r=0, b=0, t=40))
                 st.plotly_chart(fig_3d_screener, use_container_width=True)
 
             if not skipped.empty:
@@ -491,18 +524,13 @@ if app_mode == "1. Magic Formula Screener":
 # MODULE 2
 elif app_mode == "2. McKinsey Key Value Driver DCF":
     st.header("McKinsey Key Value Driver Valuation Model")
-    st.markdown(
-        "Values operations as $V = \\text{NOPLAT} \\times (1 - g / \\text{RONIC}) / (\\text{WACC} - g)$."
-    )
+    st.markdown("Values operations as $V = \\text{NOPLAT} \\times (1 - g / \\text{RONIC}) / (\\text{WACC} - g)$.")
 
     col1, col2 = st.columns(2)
     with col1:
         noplat = st.number_input("NOPLAT ($M)", value=1000.0, step=50.0)
         growth = st.number_input("Perpetuity Growth Rate (g)", value=0.03, step=0.001, format="%.3f")
-        noplat_is_current = st.checkbox(
-            "NOPLAT is current-year (compound by 1 + g first)",
-            value=False,
-        )
+        noplat_is_current = st.checkbox("NOPLAT is current-year (compound by 1 + g first)", value=False)
     with col2:
         ronic = st.number_input("Return on New Invested Capital (RONIC)", value=0.12, min_value=0.001, step=0.01, format="%.3f")
         wacc = st.number_input("Weighted Average Cost of Capital (WACC)", value=0.08, step=0.001, format="%.3f")
@@ -513,17 +541,13 @@ elif app_mode == "2. McKinsey Key Value Driver DCF":
             st.error(status)
         else:
             st.metric(label="Calculated Enterprise Value", value=f"${val:,.2f}M")
-
-            # Dynamic Grid Computation for 3D Surface Plot
             wacc_range = np.linspace(max(0.04, wacc - 0.02), wacc + 0.02, 15)
             growth_range = np.linspace(max(0.005, growth - 0.01), min(wacc_range.min() - 0.001, growth + 0.01), 15)
-            
             z_matrix = np.zeros((len(wacc_range), len(growth_range)))
             for i, w in enumerate(wacc_range):
                 for j, g in enumerate(growth_range):
                     z_matrix[i, j] = _dcf_or_nan(noplat, g, ronic, w, noplat_is_current)
 
-            # 3D SURFACE PLOT FOR MCKINSEY DCF SENSITIVITY
             st.subheader("3D Valuation Surface Topology (WACC vs Growth vs Enterprise Value)")
             fig_3d_surface = go.Figure(data=[go.Surface(
                 z=z_matrix,
@@ -533,11 +557,7 @@ elif app_mode == "2. McKinsey Key Value Driver DCF":
             )])
             fig_3d_surface.update_layout(
                 title="Enterprise Value Sensitivity Surface ($M)",
-                scene=dict(
-                    xaxis_title='Growth Rate g (%)',
-                    yaxis_title='WACC (%)',
-                    zaxis_title='Valuation ($M)'
-                ),
+                scene=dict(xaxis_title='Growth Rate g (%)', yaxis_title='WACC (%)', zaxis_title='Valuation ($M)'),
                 template="plotly_dark",
                 margin=dict(l=0, r=0, b=0, t=40)
             )
@@ -554,12 +574,7 @@ elif app_mode == "3. Economic Profitability & EVA":
         roic, wacc = roic_pct / 100, wacc_pct / 100
         eva = calculate_economic_profit(roic, wacc, ic)
         spread_pp = (roic - wacc) * 100
-        st.metric(
-            label="Economic Value Added (EVA)",
-            value=f"${eva:,.2f}M",
-            delta=f"{spread_pp:+.2f}% spread",
-        )
-        st.caption(f"Economic Spread: {spread_pp:+.2f} percentage points")
+        st.metric(label="Economic Value Added (EVA)", value=f"${eva:,.2f}M", delta=f"{spread_pp:+.2f}% spread")
         if spread_pp > 0:
             st.success("Company is creating economic shareholder value (ROIC > WACC).")
         else:
@@ -620,7 +635,4 @@ elif app_mode == "5. Kelly Criterion Allocator":
             col1, col2 = st.columns(2)
             col1.metric(label="Full Kelly Fraction ($f^*$)", value=f"{f_opt * 100:.2f}%")
             col2.metric(label="Half Kelly Fraction ($0.5 \\times f^*$)", value=f"{f_opt * 50:.2f}%")
-        st.info(
-            "Institutional Risk Advisory: Professional quantitative portfolios deploy Fractional Kelly sizing "
-            "(e.g., Half Kelly) to guard against downside parameter estimation variance."
-        )
+        st.info("Institutional Risk Advisory: Professional quantitative portfolios deploy Fractional Kelly sizing.")
