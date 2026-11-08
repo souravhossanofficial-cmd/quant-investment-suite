@@ -439,15 +439,17 @@ col_t4.metric("Active Risk Exposure (Tracking)", "3.42%", "Controlled")
 
 st.markdown("---")
 
-# Ultra-Low Latency Real-Time Ticker Streamer Section
+# Ultra-Low Latency Real-Time Ticker Streamer Section with Name Resolver
 st.subheader("⚡ Real-Time Market Ticker Stream & Watchlist (Low-Latency Stream)")
-default_stream_tickers = "AAPL, MSFT, GOOGL, NVDA, AMZN, TSLA"
-stream_input = st.text_input("Watchlist Tickers (comma-separated)", default_stream_tickers)
+default_stream_input = "Apple Inc., Microsoft Corporation, Alphabet Inc., NVIDIA Corporation, Amazon.com"
+stream_input = st.text_input("Watchlist Tickers or Company Names (comma-separated)", default_stream_input)
 
 @st.fragment(run_every=5)
 def render_live_ticker_stream(raw_input):
-    stream_tickers = parse_tickers(raw_input)
-    if stream_tickers:
+    raw_items = [item.strip() for item in raw_input.split(",") if item.strip()]
+    if raw_items:
+        # Automatically resolve company names to valid tickers
+        stream_tickers = [get_ticker_from_name(item) for item in raw_items]
         live_df = fetch_live_quotes_concurrent(stream_tickers)
         if not live_df.empty:
             cols = st.columns(len(live_df))
@@ -459,7 +461,7 @@ def render_live_ticker_stream(raw_input):
                         value=f"${row['Price ($)']:,.2f}",
                         delta=delta_str
                     )
-        st.caption("⚡ Live feed active | Sub-second multi-threaded polling | Auto-refreshing every 5s via non-blocking fragment.")
+        st.caption("⚡ Live feed active | Sub-second multi-threaded polling with automatic name resolution | Auto-refreshing every 5s via non-blocking fragment.")
 
 render_live_ticker_stream(stream_input)
 st.markdown("---")
