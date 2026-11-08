@@ -5,6 +5,7 @@ import yfinance as yf
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit.components.v1 as components
+import requests
 
 # ==========================================
 # PAGE CONFIGURATION & 3D GLASSMORPHISM THEME
@@ -148,6 +149,38 @@ EXCLUDED_SECTORS = {"Financial Services", "Utilities"}
 # ==========================================
 # SHARED HELPERS & DATA UTILITIES
 # ==========================================
+def get_ticker_from_name(query):
+    """
+    Resolves a company name or partial text into a valid stock ticker symbol 
+    using Yahoo Finance's search API.
+    """
+    query = query.strip()
+    if not query:
+        return ""
+    
+    # If it looks like a clean ticker already (short, uppercase, no spaces), test it first
+    if len(query) <= 5 and " " not in query:
+        return query.upper()
+        
+    try:
+        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers, timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
+            quotes = data.get('quotes', [])
+            if quotes:
+                for q in quotes:
+                    if q.get('quoteType') == 'EQUITY':
+                        return q.get('symbol')
+                return quotes[0].get('symbol')
+    except Exception:
+        pass
+        
+    return query.upper()
+
+
 def parse_tickers(raw):
     """Split a comma-separated string into unique, uppercase ticker symbols."""
     return list(dict.fromkeys(t.strip().upper() for t in raw.split(",") if t.strip()))
@@ -404,28 +437,34 @@ if app_mode == "1. Magic Formula Screener":
     st.header("Joel Greenblatt's Magic Formula Screener")
     st.markdown(
         "Ranks equities quantitatively based on **Earnings Yield** (EBIT / Enterprise Value) and "
-        "**Return on Capital** (EBIT / Net Working Capital + Net Fixed Assets)."
+        "**Return on Capital** (EBIT / Net Working Capital + Net Fixed Assets). "
+        "You can enter either **stock ticker symbols** or **full company names** (e.g., *Apple Inc., Microsoft Corporation*)."
     )
 
-    default_tickers = "AAPL, MSFT, GOOGL, AMZN, META, BRK-B, JNJ, V, PG, UNH, HD, MA, DIS, ADBE, NFLX"
-    ticker_input = st.text_area("Enter Tickers (comma-separated)", default_tickers)
+    default_input = "Apple Inc., Microsoft Corporation, Alphabet Inc., Amazon.com, Meta Platforms"
+    ticker_input = st.text_area("Enter Tickers or Company Names (comma-separated)", default_input)
     exclude_sectors = st.checkbox(
         "Exclude Financial Services and Utilities (Greenblatt rules)",
         value=True,
     )
 
     if st.button("Run Screener"):
-        tickers = parse_tickers(ticker_input)
-        if not tickers:
-            st.error("Please enter at least one valid ticker symbol.")
+        raw_items = [item.strip() for item in ticker_input.split(",") if item.strip()]
+        if not raw_items:
+            st.error("Please enter at least one ticker symbol or company name.")
         else:
-            with st.spinner("Processing multi-factor quantitative ranking..."):
-                ranked, skipped = run_magic_formula_screener(tickers, exclude_sectors)
+            with st.spinner("Resolving names and processing multi-factor quantitative ranking..."):
+                resolved_tickers = []
+                for item in raw_items:
+                    ticker = get_ticker_from_name(item)
+                    resolved_tickers.append(ticker)
+                
+                ranked, skipped = run_magic_formula_screener(resolved_tickers, exclude_sectors)
 
             if ranked.empty:
                 st.error("No tickers passed the screening criteria.")
             else:
-                st.success(f"Successfully ranked {len(ranked)} of {len(tickers)} tickers.")
+                st.success(f"Successfully ranked {len(ranked)} of {len(raw_items)} items (Resolved: {', '.join(resolved_tickers)}).")
                 st.dataframe(ranked.style.format(MAGIC_FORMATS), use_container_width=True, hide_index=True)
                 
                 # 3D Scatter Visual of Earnings Yield vs ROC vs Market Cap
@@ -446,7 +485,7 @@ if app_mode == "1. Magic Formula Screener":
                 st.plotly_chart(fig_3d_screener, use_container_width=True)
 
             if not skipped.empty:
-                st.warning(f"Audit Log: Skipped {len(skipped)} ticker(s).")
+                st.warning(f"Audit Log: Skipped {len(skipped)} item(s).")
                 st.dataframe(skipped, use_container_width=True, hide_index=True)
 
 # MODULE 2
