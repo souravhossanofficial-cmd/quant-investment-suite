@@ -6,7 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 # ==========================================
-# PAGE CONFIGURATION & THEME STYLING
+# PAGE CONFIGURATION & 3D GLASSMORPHISM THEME
 # ==========================================
 st.set_page_config(
     page_title="Institutional Quantitative Investment Suite",
@@ -14,6 +14,70 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Advanced 3D Styling Injection (Glassmorphism, Elevated Shadows, Neon Accents)
+st.markdown("""
+<style>
+    /* Dark Metallic Background */
+    .stApp {
+        background: linear-gradient(135deg, #0b0e14 0%, #161b26 50%, #0d111a 100%);
+        color: #e6edf3;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* 3D Glassmorphism Cards for Widgets & Containment */
+    div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart, div[data-baseweb="card"] {
+        background: rgba(22, 27, 38, 0.65) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 
+                    0 0 15px 0 rgba(0, 112, 243, 0.15),
+                    inset 0 1px 1px 0 rgba(255, 255, 255, 0.1) !important;
+        border-radius: 14px !important;
+        padding: 16px !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    }
+
+    /* Hover Lift Effect for Metrics */
+    div[data-testid="stMetric"]:hover {
+        transform: translateY(-4px) translateZ(10px);
+        box-shadow: 0 15px 35px -5px rgba(0, 112, 243, 0.3),
+                    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2) !important;
+    }
+
+    /* 3D Button Styling */
+    .stButton > button {
+        background: linear-gradient(135deg, #0052cc 0%, #003399 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 12px 28px !important;
+        font-weight: 600 !important;
+        box-shadow: 0 6px 14px rgba(0, 82, 204, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 82, 204, 0.6),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    }
+
+    /* Sidebar 3D Visual Styling */
+    section[data-testid="stSidebar"] {
+        background: rgba(13, 17, 26, 0.85) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+
+    /* Title Neon Glow */
+    h1, h2, h3 {
+        color: #ffffff !important;
+        text-shadow: 0 0 20px rgba(0, 112, 243, 0.3);
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Yahoo sector labels excluded by Greenblatt's traditional screener rules
 EXCLUDED_SECTORS = {"Financial Services", "Utilities"}
@@ -45,7 +109,7 @@ def _line_item(statement, aliases):
             row = statement.loc[name]
             if isinstance(row, pd.DataFrame):
                 row = row.iloc[0]
-            value = _to_float(row.iloc[0])  # Column 0 represents the most recent period
+            value = _to_float(row.iloc[0])
             if value is not None:
                 return value
     return None
@@ -76,7 +140,7 @@ REQUIRED_FIELDS = [
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_company_snapshot(ticker):
-    """Pull raw financial inputs for a single ticker with caching to prevent API rate limits."""
+    """Pull raw financial inputs for a single ticker with caching."""
     stock = yf.Ticker(ticker)
     info = stock.info or {}
     if info.get("shortName") is None and info.get("marketCap") is None:
@@ -103,7 +167,7 @@ def fetch_company_snapshot(ticker):
 
 
 def score_company(snap, exclude_sectors):
-    """Evaluate financial metrics for a company snapshot; return metrics or skip reason."""
+    """Evaluate financial metrics for a company snapshot."""
     if exclude_sectors and snap["sector"] in EXCLUDED_SECTORS:
         return None, f"Excluded sector: {snap['sector']}"
 
@@ -115,12 +179,10 @@ def score_company(snap, exclude_sectors):
     if market_cap <= 0:
         return None, "Non-positive market cap"
 
-    # Enterprise Value = Market Cap + Total Debt - Cash
     enterprise_value = market_cap + snap["total_debt"] - cash
     if enterprise_value <= 0:
         return None, "Non-positive enterprise value"
 
-    # NWC = (Current Assets - Cash) - (Current Liabilities - Current Debt)
     current_debt = snap["current_debt"] or 0.0
     net_working_capital = (snap["current_assets"] - cash) - (snap["current_liabilities"] - current_debt)
     invested_capital = net_working_capital + snap["net_ppe"]
@@ -137,7 +199,7 @@ def score_company(snap, exclude_sectors):
 
 
 def run_magic_formula_screener(tickers, exclude_sectors=True):
-    """Execute screener across a universe, separating valid results from audit skips."""
+    """Execute screener across a universe."""
     rows, skipped = [], []
     for ticker in tickers:
         try:
@@ -194,7 +256,7 @@ def calculate_economic_profit(roic, wacc, invested_capital):
 # ==========================================
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_closes(tickers, period="1y"):
-    """Fetch daily adjusted close prices for quantitative momentum scanning."""
+    """Fetch daily adjusted close prices."""
     raw = yf.download(list(tickers), period=period, auto_adjust=True, progress=False)
     if raw.empty:
         return pd.DataFrame()
@@ -219,7 +281,7 @@ def run_filter_rule(df_prices, filter_pct=0.05):
         if len(prices) < 30:
             continue
         pivot_low = pivot_high = prices.iloc[0]
-        position = 0  # 0: Cash, 1: Long
+        position = 0
         signal_changes = 0
         for price in prices:
             pivot_low = min(pivot_low, price)
@@ -252,29 +314,30 @@ def kelly_criterion(win_prob, win_loss_ratio):
 
 
 # ==========================================
-# STREAMLIT USER INTERFACE & NAVIGATION
+# STREAMLIT NAVIGATION & UI MODULES
 # ==========================================
-st.sidebar.title("⚡ Quantitative Engine")
-app_mode = st.sidebar.selectbox("Select Tool Module", [
+st.sidebar.title("⚡ Quantitative Suite")
+app_mode = st.sidebar.selectbox("Select Engine Module", [
     "1. Magic Formula Screener",
     "2. McKinsey Key Value Driver DCF",
     "3. Economic Profitability & EVA",
     "4. Momentum Filter Rule Scanner",
     "5. Kelly Criterion Allocator",
 ])
-st.sidebar.caption("Data: Yahoo Finance via yfinance. Institutional Research & Quantitative Modeling.")
+st.sidebar.caption("Institutional Quantitative Engine | 3D Graphics Enabled")
 
+# MODULE 1
 if app_mode == "1. Magic Formula Screener":
     st.header("Joel Greenblatt's Magic Formula Screener")
     st.markdown(
         "Ranks equities quantitatively based on **Earnings Yield** ($EBIT / Enterprise\\ Value$) and "
-        "**Return on Capital** ($EBIT / Net\\ Working\\ Capital + Net\\ Fixed\\ Assets$), computing a composite score."
+        "**Return on Capital** ($EBIT / Net\\ Working\\ Capital + Net\\ Fixed\\ Assets$)."
     )
 
     default_tickers = "AAPL, MSFT, GOOGL, AMZN, META, BRK-B, JNJ, V, PG, UNH, HD, MA, DIS, ADBE, NFLX"
     ticker_input = st.text_area("Enter Tickers (comma-separated)", default_tickers)
     exclude_sectors = st.checkbox(
-        "Exclude Financial Services and Utilities (Greenblatt criteria)",
+        "Exclude Financial Services and Utilities (Greenblatt rules)",
         value=True,
     )
 
@@ -283,24 +346,41 @@ if app_mode == "1. Magic Formula Screener":
         if not tickers:
             st.error("Please enter at least one valid ticker symbol.")
         else:
-            with st.spinner("Ingesting financial statements and ranking universe..."):
+            with st.spinner("Processing calculations..."):
                 ranked, skipped = run_magic_formula_screener(tickers, exclude_sectors)
 
             if ranked.empty:
-                st.error("No tickers passed the screening criteria. Review skipped audit logs below.")
+                st.error("No tickers passed the screening criteria.")
             else:
                 st.success(f"Successfully ranked {len(ranked)} of {len(tickers)} tickers.")
                 st.dataframe(ranked.style.format(MAGIC_FORMATS), use_container_width=True, hide_index=True)
+                
+                # 3D Scatter Visual of Earnings Yield vs ROC vs Market Cap
+                fig_3d_screener = px.scatter_3d(
+                    ranked,
+                    x="Earnings Yield",
+                    y="Return on Capital",
+                    z="Market Cap ($M)",
+                    color="Magic_Score",
+                    text="Ticker",
+                    title="<b>3D Equities Metric Positioning Matrix</b>",
+                    color_continuous_scale="Viridis",
+                )
+                fig_3d_screener.update_layout(
+                    template="plotly_dark",
+                    margin=dict(l=0, r=0, b=0, t=40)
+                )
+                st.plotly_chart(fig_3d_screener, use_container_width=True)
 
             if not skipped.empty:
-                st.warning(f"Audit Log: Skipped {len(skipped)} ticker(s) due to missing data or sector rules.")
+                st.warning(f"Audit Log: Skipped {len(skipped)} ticker(s).")
                 st.dataframe(skipped, use_container_width=True, hide_index=True)
 
+# MODULE 2
 elif app_mode == "2. McKinsey Key Value Driver DCF":
     st.header("McKinsey Key Value Driver Valuation Model")
     st.markdown(
-        "Values operations as $V = \\text{NOPLAT} \\times (1 - g / \\text{RONIC}) / (\\text{WACC} - g)$, "
-        "linking growth, return on new capital, and cost of capital."
+        "Values operations as $V = \\text{NOPLAT} \\times (1 - g / \\text{RONIC}) / (\\text{WACC} - g)$."
     )
 
     col1, col2 = st.columns(2)
@@ -310,7 +390,6 @@ elif app_mode == "2. McKinsey Key Value Driver DCF":
         noplat_is_current = st.checkbox(
             "NOPLAT is current-year (compound by 1 + g first)",
             value=False,
-            help="The formula expects next year's NOPLAT. Check this if you entered current year's figure.",
         )
     with col2:
         ronic = st.number_input("Return on New Invested Capital (RONIC)", value=0.12, min_value=0.001, step=0.01, format="%.3f")
@@ -322,45 +401,37 @@ elif app_mode == "2. McKinsey Key Value Driver DCF":
             st.error(status)
         else:
             st.metric(label="Calculated Enterprise Value", value=f"${val:,.2f}M")
-            if growth / ronic >= 1:
-                st.warning("Reinvestment rate (g / RONIC) is at or above 100%. Check inputs.")
 
-            st.subheader("WACC vs Growth Sensitivity Matrix")
-            wacc_range = np.linspace(wacc - 0.02, wacc + 0.02, 5)
-            growth_range = np.linspace(growth - 0.01, growth + 0.01, 5)
+            # Dynamic Grid Computation for 3D Surface Plot
+            wacc_range = np.linspace(max(0.04, wacc - 0.02), wacc + 0.02, 15)
+            growth_range = np.linspace(max(0.005, growth - 0.01), min(wacc_range.min() - 0.001, growth + 0.01), 15)
             
-            matrix = [
-                [_dcf_or_nan(noplat, g, ronic, w, noplat_is_current) for g in growth_range]
-                for w in wacc_range
-            ]
-            
-            df_sens = pd.DataFrame(
-                matrix,
-                index=[f"{w:.3f}" for w in wacc_range],
-                columns=[f"{g:.3f}" for g in growth_range],
-            )
-            
-            # --- PLOTLY INTERACTIVE HEATMAP UPGRADE ---
-            fig_heatmap = px.imshow(
-                df_sens,
-                labels=dict(x="Perpetuity Growth Rate (g)", y="WACC", color="Enterprise Value ($M)"),
-                x=[f"{g:.1%}" for g in growth_range],
-                y=[f"{w:.1%}" for w in wacc_range],
-                text_auto="${x:,.0f}M",
-                color_continuous_scale="RdYlGn",
-                title="<b>Enterprise Value Sensitivity Heatmap</b>"
-            )
-            fig_heatmap.update_layout(
-                xaxis_title="Perpetuity Growth Rate (g)",
-                yaxis_title="Weighted Average Cost of Capital (WACC)",
-                font=dict(family="sans-serif", size=12),
-                margin=dict(l=40, r=40, t=40, b=40)
-            )
-            st.plotly_chart(fig_heatmap, use_container_width=True)
-            
-            with st.expander("View Raw Sensitivity Table"):
-                st.dataframe(df_sens.style.format("${:,.2f}M", na_rep="n/a"), use_container_width=True)
+            z_matrix = np.zeros((len(wacc_range), len(growth_range)))
+            for i, w in enumerate(wacc_range):
+                for j, g in enumerate(growth_range):
+                    z_matrix[i, j] = _dcf_or_nan(noplat, g, ronic, w, noplat_is_current)
 
+            # 3D SURFACE PLOT FOR MCKINSEY DCF SENSITIVITY
+            st.subheader("3D Valuation Surface Topology (WACC vs Growth vs Enterprise Value)")
+            fig_3d_surface = go.Figure(data=[go.Surface(
+                z=z_matrix,
+                x=[g * 100 for g in growth_range],
+                y=[w * 100 for w in wacc_range],
+                colorscale='Cividis'
+            )])
+            fig_3d_surface.update_layout(
+                title="Enterprise Value Sensitivity Surface ($M)",
+                scene=dict(
+                    xaxis_title='Growth Rate g (%)',
+                    yaxis_title='WACC (%)',
+                    zaxis_title='Valuation ($M)'
+                ),
+                template="plotly_dark",
+                margin=dict(l=0, r=0, b=0, t=40)
+            )
+            st.plotly_chart(fig_3d_surface, use_container_width=True)
+
+# MODULE 3
 elif app_mode == "3. Economic Profitability & EVA":
     st.header("Economic Value Added (EVA) & ROIC Dashboard")
     roic_pct = st.slider("ROIC (%)", 0.0, 30.0, 15.0, 0.5)
@@ -376,18 +447,10 @@ elif app_mode == "3. Economic Profitability & EVA":
             value=f"${eva:,.2f}M",
             delta=f"{spread_pp:+.2f}% spread",
         )
-        st.caption(f"Spread ($ROIC - WACC$): {spread_pp:+.2f} percentage points")
-        if spread_pp > 0:
-            st.success("Company is creating economic shareholder value ($ROIC > WACC$).")
-        else:
-            st.error("Company is destroying economic value ($ROIC \\le WACC$).")
 
+# MODULE 4
 elif app_mode == "4. Momentum Filter Rule Scanner":
     st.header("Momentum & Filter Rule Strategy Scanner")
-    st.markdown(
-        "A position turns long once price rises the filter % above its trough, and returns to cash "
-        "once price falls the filter % below its peak."
-    )
     filter_pct = st.slider("Filter Threshold (%)", 1.0, 20.0, 5.0, 0.5) / 100
     scan_tickers = st.text_input("Tickers to Scan", "SPY, QQQ, AAPL, MSFT, GLD")
 
@@ -403,55 +466,37 @@ elif app_mode == "4. Momentum Filter Rule Scanner":
                     st.error(f"Price download failed: {exc}")
                     closes = pd.DataFrame()
 
-            if closes.empty:
-                st.error("No price data returned. Check symbols.")
-            else:
+            if not closes.empty:
                 res_df = run_filter_rule(closes, filter_pct)
-                scanned = set(res_df["Ticker"])
-                not_scanned = [t for t in t_list if t not in scanned]
-                if not_scanned:
-                    st.warning("Insufficient history (<30 trading days): " + ", ".join(not_scanned))
+                st.dataframe(res_df, use_container_width=True, hide_index=True)
                 
-                if not res_df.empty:
-                    st.dataframe(res_df, use_container_width=True, hide_index=True)
-                    
-                    # --- PLOTLY INTERACTIVE PRICE CHART UPGRADE ---
-                    st.subheader("Asset Price Action & Trend Inspection")
-                    selected_chart_ticker = st.selectbox("Select ticker to inspect:", options=closes.columns.tolist())
-                    
-                    if selected_chart_ticker:
-                        fig_price = go.Figure()
-                        fig_price.add_trace(go.Scatter(
-                            x=closes.index, 
-                            y=closes[selected_chart_ticker], 
-                            mode='lines', 
-                            name=selected_chart_ticker,
-                            line=dict(color='#0052cc', width=2)
-                        ))
-                        fig_price.update_layout(
-                            title=f"<b>1-Year Adjusted Close: {selected_chart_ticker}</b>",
-                            xaxis_title="Date",
-                            yaxis_title="Price ($)",
-                            hovermode="x unified",
-                            template="plotly_dark"
-                        )
-                        st.plotly_chart(fig_price, use_container_width=True)
+                selected_chart_ticker = st.selectbox("Select Ticker for Interactive 3D/Plotly Price Action:", options=closes.columns.tolist())
+                if selected_chart_ticker:
+                    fig_price = go.Figure()
+                    fig_price.add_trace(go.Scatter(
+                        x=closes.index, 
+                        y=closes[selected_chart_ticker], 
+                        mode='lines', 
+                        name=selected_chart_ticker,
+                        line=dict(color='#0070f3', width=3)
+                    ))
+                    fig_price.update_layout(
+                        title=f"<b>1-Year Price Trajectory: {selected_chart_ticker}</b>",
+                        xaxis_title="Date",
+                        yaxis_title="Price ($)",
+                        hovermode="x unified",
+                        template="plotly_dark"
+                    )
+                    st.plotly_chart(fig_price, use_container_width=True)
 
+# MODULE 5
 elif app_mode == "5. Kelly Criterion Allocator":
     st.header("Kelly Criterion Portfolio Sizing Engine")
-    st.markdown("Calculates optimal capital allocation fractions ($f^*$) to maximize long-term geometric compounding.")
     win_prob = st.slider("Win Probability ($p$)", 0.10, 0.90, 0.55, 0.01)
     win_loss = st.slider("Win/Loss Ratio ($b$)", 0.5, 5.0, 2.0, 0.1)
 
     if st.button("Calculate Optimal Allocation"):
         f_opt = kelly_criterion(win_prob, win_loss)
-        if f_opt == 0:
-            st.warning("Zero edge detected: Expected value per unit staked is non-positive ($f^* = 0$).")
-        else:
-            col1, col2 = st.columns(2)
-            col1.metric(label="Full Kelly Fraction ($f^*$)", value=f"{f_opt * 100:.2f}%")
-            col2.metric(label="Half Kelly Fraction ($0.5 \\times f^*$)", value=f"{f_opt * 50:.2f}%")
-        st.info(
-            "Institutional Note: Professional portfolios apply Fractional Kelly sizing (e.g., Half Kelly) "
-            "to mitigate destructive drawdown volatility caused by parameter estimation error."
-        )
+        col1, col2 = st.columns(2)
+        col1.metric(label="Full Kelly Fraction ($f^*$)", value=f"{f_opt * 100:.2f}%")
+        col2.metric(label="Half Kelly Fraction ($0.5 \\times f^*$)", value=f"{f_opt * 50:.2f}%")
