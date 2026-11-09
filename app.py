@@ -581,12 +581,12 @@ col_t4.metric("Active Risk Exposure (Tracking)", "3.42%", "Controlled")
 
 st.markdown("---")
 
-# Ultra-Low Latency Real-Time Ticker Streamer Section with Name Resolver
+# Ultra-Low Latency Real-Time Ticker Streamer Section with Name Resolver (1s Refresh Rate)
 st.subheader("⚡ Real-Time Market Ticker Stream & Watchlist (Low-Latency Stream)")
 default_stream_input = "Apple Inc., Microsoft Corporation, Alphabet Inc., NVIDIA Corporation, Amazon.com"
 stream_input = st.text_input("Watchlist Tickers or Company Names (comma-separated)", default_stream_input)
 
-@st.fragment(run_every=5)
+@st.fragment(run_every=1)
 def render_live_ticker_stream(raw_input):
     raw_items = [item.strip() for item in raw_input.split(",") if item.strip()]
     if raw_items:
@@ -602,7 +602,7 @@ def render_live_ticker_stream(raw_input):
                         value=f"${row['Price ($)']:,.2f}",
                         delta=delta_str
                     )
-        st.caption("⚡ Live feed active | Sub-second multi-threaded polling with automatic name resolution | Auto-refreshing every 5s via non-blocking fragment.")
+        st.caption("⚡ Live feed active | Sub-second multi-threaded polling with automatic name resolution | Auto-refreshing every 1s via non-blocking fragment.")
 
 render_live_ticker_stream(stream_input)
 st.markdown("---")
@@ -999,7 +999,6 @@ elif app_mode == "10. Macro Stress Tests & Monte Carlo VaR":
 # MODULE 11
 elif app_mode == "11. Alpha & Capital Preservation Impact Analytics":
     st.header("Quantitative Alpha & Capital Preservation Analytics ($USD)")
-    # Using default seizure prob representation or computed proxy
     geo_saved = portfolio_aum * 0.18 * 0.34 * 0.985
     tail_saved = portfolio_aum * 0.22 * 0.784
     exec_alpha = 1_500_000_000 * (40.0 / 10000.0)
