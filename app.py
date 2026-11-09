@@ -28,8 +28,158 @@ except ImportError:
     CUPY_AVAILABLE = False
 
 # ==========================================
-# INTERACTIVE TUTORIAL BOOK (USER MANUAL HTML)
+# PAGE CONFIGURATION & 3D GLASSMORPHISM THEME
 # ==========================================
+st.set_page_config(
+    page_title="Institutional Global Asset Management & Sovereign Risk Suite",
+    page_icon="🛡️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Advanced 3D Styling Injection (Glassmorphism, Elevated Shadows, Neon Cyan Data Streams)
+st.markdown("""
+<style>
+    /* Dark Obsidian & Deep Space Theme */
+    .stApp {
+        background: linear-gradient(135deg, #06090f 0%, #0f172a 50%, #090d16 100%);
+        color: #e2e8f0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* 3D Glassmorphic Cards for Telemetry & Containers */
+    div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart, div[data-baseweb="card"] {
+        background: rgba(15, 23, 42, 0.75) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(56, 189, 248, 0.15) !important;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7),
+                    0 0 25px 0 rgba(56, 189, 248, 0.1) !important;
+        border-radius: 16px !important;
+        padding: 20px !important;
+        transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+    }
+
+    /* 3D Hover Elevation for Metrics */
+    div[data-testid="stMetric"]:hover {
+        transform: translateY(-4px) translateZ(12px);
+        box-shadow: 0 25px 50px -12px rgba(56, 189, 248, 0.3),
+                    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2) !important;
+        border-color: rgba(56, 189, 248, 0.4) !important;
+    }
+
+    /* Institutional Button Styling */
+    .stButton > button {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 10px !important;
+        padding: 12px 28px !important;
+        font-weight: 600 !important;
+        box-shadow: 0 8px 20px rgba(2, 132, 199, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 25px rgba(2, 132, 199, 0.6),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    }
+
+    /* Sidebar Glassmorphism */
+    section[data-testid="stSidebar"] {
+        background: rgba(10, 15, 30, 0.95) !important;
+        border-right: 1px solid rgba(56, 189, 248, 0.1) !important;
+    }
+
+    /* Title Glow */
+    h1, h2, h3 {
+        color: #f8fafc !important;
+        text-shadow: 0 0 25px rgba(56, 189, 248, 0.35);
+    }
+
+    /* Status Alert Boxes */
+    .status-alert {
+        padding: 15px;
+        border-radius: 8px;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+    .status-triggered {
+        background-color: rgba(225, 29, 72, 0.2);
+        border: 1px solid #f43f5e;
+        color: #fda4af;
+    }
+    .status-normal {
+        background-color: rgba(16, 185, 129, 0.2);
+        border: 1px solid #10b981;
+        color: #6ee7b7;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Live Animated Background Canvas (Particle Net Stream)
+particle_canvas = """
+<div id="particle-container" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;overflow:hidden;">
+    <canvas id="canvas"></canvas>
+</div>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let width = canvas.width = window.innerWidth;
+let height = canvas.height = window.innerHeight;
+
+window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+});
+
+const particles = [];
+const count = 55;
+for(let i=0; i<count; i++){
+    particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        radius: Math.random() * 2 + 1
+    });
+}
+
+function animate(){
+    ctx.clearRect(0,0,width,height);
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.06)';
+    
+    particles.forEach((p, index) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if(p.x < 0 || p.x > width) p.vx *= -1;
+        if(p.y < 0 || p.y > height) p.vy *= -1;
+        
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        for(let j = index + 1; j < particles.length; j++){
+            let p2 = particles[j];
+            let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+            if(dist < 130){
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+            }
+        }
+    });
+    requestAnimationFrame(animate);
+}
+animate();
+</script>
+"""
+components.html(particle_canvas, height=0, width=0)
+
 USER_MANUAL_HTML = """<!doctype html>
 <html lang="en">
 <head>
@@ -427,6 +577,21 @@ button{margin-top:10px;font:600 14px "IBM Plex Sans",system-ui,sans-serif;color:
 </main>
 
 <script>
+// Prevent iframe navigation reset and enable smooth internal scrolling
+document.querySelectorAll('nav a').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href');
+        const targetElement = document.querySelector(targetId);
+        if (targetElement) {
+            targetElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+
 const NS="http://www.w3.org/2000/svg",$=i=>document.getElementById(i);
 const add=(g,t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);g.appendChild(e);return e};
 const yAt=(x,m,s,H,b)=>b-H*Math.exp(-((x-m)**2)/(2*s*s));
@@ -443,160 +608,8 @@ function gbm(){const g=$("paths");g.innerHTML="";for(let p=0;p<25;p++){let s=100
 gbm();$("sim").onclick=gbm;
 </script>
 </body>
-</html>"""
-
-# ==========================================
-# PAGE CONFIGURATION & 3D GLASSMORPHISM THEME
-# ==========================================
-st.set_page_config(
-    page_title="Institutional Global Asset Management & Sovereign Risk Suite",
-    page_icon="🛡️",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# Advanced 3D Styling Injection (Glassmorphism, Elevated Shadows, Neon Cyan Data Streams)
-st.markdown("""
-<style>
-    /* Dark Obsidian & Deep Space Theme */
-    .stApp {
-        background: linear-gradient(135deg, #06090f 0%, #0f172a 50%, #090d16 100%);
-        color: #e2e8f0;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-
-    /* 3D Glassmorphic Cards for Telemetry & Containers */
-    div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart, div[data-baseweb="card"] {
-        background: rgba(15, 23, 42, 0.75) !important;
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
-        border: 1px solid rgba(56, 189, 248, 0.15) !important;
-        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7),
-                    0 0 25px 0 rgba(56, 189, 248, 0.1) !important;
-        border-radius: 16px !important;
-        padding: 20px !important;
-        transition: transform 0.25s ease, box-shadow 0.25s ease !important;
-    }
-
-    /* 3D Hover Elevation for Metrics */
-    div[data-testid="stMetric"]:hover {
-        transform: translateY(-4px) translateZ(12px);
-        box-shadow: 0 25px 50px -12px rgba(56, 189, 248, 0.3),
-                    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2) !important;
-        border-color: rgba(56, 189, 248, 0.4) !important;
-    }
-
-    /* Institutional Button Styling */
-    .stButton > button {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-        color: #ffffff !important;
-        border: none !important;
-        border-radius: 10px !important;
-        padding: 12px 28px !important;
-        font-weight: 600 !important;
-        box-shadow: 0 8px 20px rgba(2, 132, 199, 0.4),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-        transition: all 0.3s ease !important;
-    }
-
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 25px rgba(2, 132, 199, 0.6),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
-    }
-
-    /* Sidebar Glassmorphism */
-    section[data-testid="stSidebar"] {
-        background: rgba(10, 15, 30, 0.95) !important;
-        border-right: 1px solid rgba(56, 189, 248, 0.1) !important;
-    }
-
-    /* Title Glow */
-    h1, h2, h3 {
-        color: #f8fafc !important;
-        text-shadow: 0 0 25px rgba(56, 189, 248, 0.35);
-    }
-
-    /* Status Alert Boxes */
-    .status-alert {
-        padding: 15px;
-        border-radius: 8px;
-        font-weight: 600;
-        margin-bottom: 15px;
-    }
-    .status-triggered {
-        background-color: rgba(225, 29, 72, 0.2);
-        border: 1px solid #f43f5e;
-        color: #fda4af;
-    }
-    .status-normal {
-        background-color: rgba(16, 185, 129, 0.2);
-        border: 1px solid #10b981;
-        color: #6ee7b7;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Live Animated Background Canvas (Particle Net Stream)
-particle_canvas = """
-<div id="particle-container" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;overflow:hidden;">
-    <canvas id="canvas"></canvas>
-</div>
-<script>
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-let width = canvas.width = window.innerWidth;
-let height = canvas.height = window.innerHeight;
-
-window.addEventListener('resize', () => {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
-});
-
-const particles = [];
-const count = 55;
-for(let i=0; i<count; i++){
-    particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        radius: Math.random() * 2 + 1
-    });
-}
-
-function animate(){
-    ctx.clearRect(0,0,width,height);
-    ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.06)';
-    
-    particles.forEach((p, index) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        if(p.x < 0 || p.x > width) p.vx *= -1;
-        if(p.y < 0 || p.y > height) p.vy *= -1;
-        
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        for(let j = index + 1; j < particles.length; j++){
-            let p2 = particles[j];
-            let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
-            if(dist < 130){
-                ctx.beginPath();
-                ctx.moveTo(p.x, p.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.stroke();
-            }
-        }
-    });
-    requestAnimationFrame(animate);
-}
-animate();
-</script>
+</html>
 """
-components.html(particle_canvas, height=0, width=0)
 
 EXCLUDED_SECTORS = {"Financial Services", "Utilities"}
 
@@ -1130,38 +1143,8 @@ def render_custom_bulk_upload_screener():
 
 
 # ==========================================
-# STREAMLIT NAVIGATION & UI MODULES (13 MODULES)
-# ==========================================
-st.sidebar.title("⚡ Quantitative Suite")
-
-# User Manual Button & State Management
-if "show_user_manual" not in st.session_state:
-    st.session_state.show_user_manual = False
-
-if st.sidebar.button("📖 User Manual", use_container_width=True):
-    st.session_state.show_user_manual = not st.session_state.show_user_manual
-
-if st.session_state.show_user_manual:
-    st.sidebar.info("📖 User Manual Mode Active")
-
-app_mode = st.sidebar.selectbox("Select Engine Module", [
-    "1. Magic Formula Screener",
-    "2. McKinsey Key Value Driver DCF",
-    "3. Economic Profitability & EVA",
-    "4. Momentum Filter Rule Scanner",
-    "5. Kelly Criterion Allocator",
-    "6. Black-Litterman Macro Allocation Matrix",
-    "7. AURA-AEGIS Geopolitical Risk Engine",
-    "8. CHRONOS-LIQUIDITY Dark Pool & FIX DMA Router",
-    "9. NEMESIS-ALPHA Behavioral Contagion Control",
-    "10. GPU-Accelerated Macro Stress Tests & Monte Carlo VaR",
-    "11. Alpha & Capital Preservation Impact Analytics",
-    "12. Bulk Custom Portfolio Uploader",
-    "13. Enterprise Redis / WebSocket Telemetry"
-])
-st.sidebar.caption("Institutional Quantitative Suite | Real-Time Enabled")
-
 # TOP GLOBAL TELEMETRY BAR & REAL-TIME STREAMER
+# ==========================================
 if st.session_state.get("show_user_manual", False):
     st.header("📖 Quantitative Investment Suite: Masterclass User Manual")
     col_close, _ = st.columns([2, 10])
@@ -1205,6 +1188,38 @@ def render_live_ticker_stream(raw_input):
 
 render_live_ticker_stream(stream_input)
 st.markdown("---")
+
+# ==========================================
+# STREAMLIT NAVIGATION & UI MODULES (13 MODULES)
+# ==========================================
+st.sidebar.title("⚡ Quantitative Suite")
+
+# User Manual Button & State Management
+if "show_user_manual" not in st.session_state:
+    st.session_state.show_user_manual = False
+
+if st.sidebar.button("📖 User Manual", use_container_width=True):
+    st.session_state.show_user_manual = not st.session_state.show_user_manual
+
+if st.session_state.show_user_manual:
+    st.sidebar.info("📖 User Manual Mode Active")
+
+app_mode = st.sidebar.selectbox("Select Engine Module", [
+    "1. Magic Formula Screener",
+    "2. McKinsey Key Value Driver DCF",
+    "3. Economic Profitability & EVA",
+    "4. Momentum Filter Rule Scanner",
+    "5. Kelly Criterion Allocator",
+    "6. Black-Litterman Macro Allocation Matrix",
+    "7. AURA-AEGIS Geopolitical Risk Engine",
+    "8. CHRONOS-LIQUIDITY Dark Pool & FIX DMA Router",
+    "9. NEMESIS-ALPHA Behavioral Contagion Control",
+    "10. GPU-Accelerated Macro Stress Tests & Monte Carlo VaR",
+    "11. Alpha & Capital Preservation Impact Analytics",
+    "12. Bulk Custom Portfolio Uploader",
+    "13. Enterprise Redis / WebSocket Telemetry"
+])
+st.sidebar.caption("Institutional Quantitative Suite | Real-Time Enabled")
 
 # MODULE 1
 if app_mode == "1. Magic Formula Screener":
