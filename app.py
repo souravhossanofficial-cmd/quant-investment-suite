@@ -28,6 +28,424 @@ except ImportError:
     CUPY_AVAILABLE = False
 
 # ==========================================
+# INTERACTIVE TUTORIAL BOOK (USER MANUAL HTML)
+# ==========================================
+USER_MANUAL_HTML = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quantitative Investment Suite: Masterclass Tutorial</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Serif:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f3f6fa;--ink:#13223a;--mut:#4d5d75;--card:#fff;--line:#d5deea;--grid:#e1e8f2;--c:#3f51b5;color-scheme:light;box-sizing:border-box;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0b1322;--ink:#e7eefb;--mut:#9fb0c9;--card:#121d31;--line:#263a57;--grid:#132138;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0b1322;--ink:#e7eefb;--mut:#9fb0c9;--card:#121d31;--line:#263a57;--grid:#132138;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background-color:var(--paper);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:32px 32px;color:var(--ink);font:17px/1.65 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--card);z-index:10}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;display:flex;gap:2px;overflow-x:auto;padding:8px 12px;background:var(--card);border-bottom:1px solid var(--line)}
+nav a{flex:none;padding:6px 10px;border-radius:6px;color:var(--mut);font-size:14px;text-decoration:none}
+nav a:hover{background:var(--paper);color:var(--ink)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.wrap{max-width:1100px;margin:0 auto;padding:0 6vw}
+.hero{padding-top:60px}
+.kicker{margin:0;color:var(--mut);font-size:15px}
+h1,h2,.n{font-family:"IBM Plex Serif",Georgia,serif;font-weight:600;letter-spacing:-.015em;line-height:1.1}
+h1{font-size:clamp(38px,6.6vw,72px);margin:.25em 0 .3em;max-width:15ch}
+h2{font-size:clamp(26px,3.6vw,36px);margin:0 0 12px}
+p{max-width:64ch;margin:0 0 12px}
+.lede{font-size:clamp(18px,2vw,21px);max-width:46ch}
+.by{margin:0;color:var(--mut);font-size:15px}
+.wave{display:block;width:100%;height:auto;margin-top:24px}
+.block{padding:44px 0;border-top:1px solid var(--line)}
+.pts{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:24px}
+.pts div{border-left:4px solid var(--c);padding-left:16px}
+.pts h3{margin:0 0 4px;font-size:18px}
+.pts p,dd{margin:0;color:var(--mut)}
+dl{display:grid;grid-template-columns:1fr 2fr;margin:0}
+dt,dd{padding:10px 0;border-bottom:1px solid var(--line)}
+dt{font-weight:600}
+@media(max-width:700px){dl{grid-template-columns:1fr}dd{padding-top:0}}
+.ch{display:grid;grid-template-columns:110px minmax(0,1fr);gap:24px;padding:52px 0 40px;border-top:3px solid var(--c)}
+.n{font-size:88px;line-height:.9;color:var(--c)}
+@media(max-width:700px){.ch{grid-template-columns:1fr}.n{font-size:56px}}
+.tool{margin:0 0 14px;color:var(--c);font-weight:600;font-size:15px}
+.eq{font:italic 18px/1.9 "IBM Plex Serif",Georgia,serif;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;padding:10px 16px;margin:14px 0;overflow-x:auto;white-space:nowrap}
+.fig{margin:16px 0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;color:var(--c)}
+.fig svg{display:block;width:100%;height:auto}
+.fig p{margin:6px 0 0;font-size:13px;color:var(--mut)}
+.case{margin:16px 0;padding-left:16px;border-left:3px solid var(--c)}
+.case b{display:block;color:var(--c)}
+.case p{font-family:"IBM Plex Serif",Georgia,serif;max-width:none}
+ul{margin:8px 0 0;padding-left:20px}
+li::marker{color:var(--c)}
+.lbl{font:600 13px "IBM Plex Sans",sans-serif;fill:var(--ink)}
+.sm{font:400 12px "IBM Plex Sans",sans-serif;fill:var(--mut)}
+button{margin-top:10px;font:600 14px "IBM Plex Sans",system-ui,sans-serif;color:#fff;background:var(--c);border:0;border-radius:6px;padding:9px 14px;cursor:pointer}
+.draw{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 2.4s cubic-bezier(.5,0,.2,1) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.flow{stroke-dasharray:6 8;animation:flow 1.1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-14}}
+.grow{transform-box:fill-box;transform-origin:50% 100%;animation:grow 1.1s cubic-bezier(.2,.8,.2,1) both}
+.growx{transform-box:fill-box;transform-origin:0 50%;animation:growx 1s ease-out both}
+@keyframes grow{from{transform:scaleY(0)}}
+@keyframes growx{from{transform:scaleX(0)}}
+.fade{animation:fade .7s both}
+@keyframes fade{from{opacity:0}}
+@supports (animation-timeline:view()){.fig .draw,.fig .grow,.fig .growx{animation-timeline:view();animation-range:entry 0% cover 45%}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important}.draw{stroke-dashoffset:0}}
+</style>
+</head>
+<body>
+<nav aria-label="Chapters">
+<a href="#why">Why</a><a href="#who">Audience</a><a href="#m1">1 Setup</a><a href="#m2">2 Analytics</a><a href="#m3">3 Frontier</a><a href="#m4">4 VaR</a><a href="#m5">5 Black-Litterman</a><a href="#m6">6 Factors</a><a href="#m7">7 Monte Carlo</a><a href="#m8">8 Backtest</a><a href="#m9">9 ML</a><a href="#m10">10 Microstructure</a><a href="#m11">11 Derivatives</a><a href="#m12">12 Bonds</a><a href="#m13">13 DeFi</a>
+</nav>
+
+<header class="wrap hero">
+<p class="kicker">Masterclass tutorial for the Quantitative Investment Suite</p>
+<h1>From hypothesis to risk-controlled portfolio</h1>
+<p class="lede">Thirteen modules, thirteen tools. Each one explains the mathematics, animates it, and follows a real-world case from start to finish.</p>
+<p class="by">Course director: Ivy League fintech chair and academic director</p>
+<svg class="wave" viewBox="0 0 1000 160" aria-hidden="true">
+<path class="draw" pathLength="1" d="M0 90C120 20 240 20 360 90S600 160 720 90S900 20 1000 70" fill="none" stroke="#3f51b5" stroke-width="3"/>
+<path class="draw" pathLength="1" d="M0 110C150 60 260 150 400 110S640 40 800 100S940 130 1000 100" fill="none" stroke="#be123c" stroke-width="2.5" style="animation-delay:.3s"/>
+<path class="flow" d="M0 140H1000" fill="none" stroke="#0e7490" stroke-width="2"/>
+</svg>
+</header>
+
+<main class="wrap">
+
+<section id="why" class="block">
+<h2>Why use this suite?</h2>
+<div class="pts">
+<div style="--c:#3f51b5"><h3>Hypothesis to evidence in minutes</h3><p>Test an idea on decades of data before any capital is at risk.</p></div>
+<div style="--c:#be123c"><h3>The textbook, running</h3><p>Every tool implements the formula you read, so theory and practice stay linked.</p></div>
+<div style="--c:#0f766e"><h3>The same result on every machine</h3><p>Containerized environments make a desk, a classroom and a thesis reproduce identical numbers.</p></div>
+<div style="--c:#b45309"><h3>See the exposure, not just the average</h3><p>Charts show concentration, tail losses and sensitivity that one return figure hides.</p></div>
+</div>
+</section>
+
+<section id="who" class="block">
+<h2>Who this is for</h2>
+<dl>
+<dt>Portfolio analysts</dt><dd>Spot hidden concentration and co-movement across holdings.</dd>
+<dt>Portfolio managers</dt><dd>Build efficient, defensible allocations and explain them.</dd>
+<dt>Risk officers</dt><dd>Set limits with VaR and CVaR, then stress-test them.</dd>
+<dt>Quant analysts and ML quants</dt><dd>Test factor and machine-learning signals without look-ahead bias.</dd>
+<dt>Fintech developers</dt><dd>Ship reproducible analytics as a product, not a notebook.</dd>
+<dt>Derivatives and fixed-income traders</dt><dd>Price, hedge and measure rate and volatility sensitivity.</dd>
+<dt>Students</dt><dd>See each formula move next to a story you can remember.</dd>
+</dl>
+</section>
+
+<section id="m1" class="ch block" style="--c:#3f51b5;border-top-width:3px">
+<div class="n">1</div>
+<div>
+<h2>Setup and the devcontainer</h2>
+<p class="tool">Tool: reproducible workspace. Audience: fintech engineers.</p>
+<p>Quant research often fails for a dull reason: the code runs on one laptop and nowhere else. A devcontainer packages Python, the libraries and the app into one Docker image, so every analyst gets identical results.</p>
+<figure class="fig" style="margin-left:0"><svg viewBox="0 0 300 200" role="img" aria-label="Host machine containing a VS Code devcontainer and a Docker container">
+<rect class="flow" x="6" y="6" width="288" height="188" rx="16" fill="none" stroke="currentColor" stroke-width="2"/>
+<rect x="24" y="36" width="252" height="150" rx="12" fill="currentColor" fill-opacity=".08"/>
+<rect class="fade" style="animation-delay:.3s" x="44" y="66" width="212" height="102" rx="10" fill="currentColor" fill-opacity=".2"/>
+<text class="sm" x="34" y="28">Host machine</text>
+<text class="sm" x="54" y="58">VS Code devcontainer</text>
+<text class="lbl" x="150" y="100" text-anchor="middle">Docker container</text>
+<text class="sm" x="150" y="122" text-anchor="middle">Python, pandas, Streamlit,</text>
+<text class="sm" x="150" y="138" text-anchor="middle">Plotly, yfinance, statsmodels</text>
+</svg></figure>
+<div class="eq">Docker image + devcontainer.json = one reproducible research environment</div>
+<div class="case"><b>Case: Jun Park, a new analyst at a Singapore hedge fund</b><p>On day one his Python setup breaks on a library version mismatch and eats the morning. The team's devcontainer rebuilds the same environment automatically, so he spends the afternoon on his first real backtest.</p></div>
+<p><strong>Why use it.</strong> Reproducibility is a control. A result nobody can rerun is not a result.</p>
+<ul><li>Onboard new analysts in a day</li><li>Share research code that runs unchanged</li><li>Reproduce any past model for audit</li></ul>
+</div>
+</section>
+
+<section id="m2" class="ch block" style="--c:#0369a1">
+<div class="n">2</div>
+<div>
+<h2>Data engineering and asset analytics</h2>
+<p class="tool">Tool: correlation heatmap. Audience: portfolio analysts.</p>
+<p>Prices become returns because returns are comparable across assets. Correlation then shows which holdings genuinely diversify and which only look different.</p>
+<figure class="fig"><svg viewBox="0 0 300 200" role="img" aria-label="Price path and a three-by-three correlation heatmap">
+<path class="draw" pathLength="1" d="M10 96C40 60 60 110 90 80S140 30 170 60S220 100 250 30S280 20 290 26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+<text class="sm" x="200" y="110">Correlation</text>
+<g id="hm"></g>
+<text class="sm" x="10" y="192">Illustrative data</text>
+</svg></figure>
+<div class="eq">r<sub>t</sub> = ln(P<sub>t</sub> / P<sub>t−1</sub>) &nbsp; μ = E[R] × 252 &nbsp; σ = √Var(R) × √252</div>
+<div class="case"><b>Case: Helena Vance, senior strategist at Apex Capital</b><p>Helena believed her three-stock tech sleeve was diversified. The heatmap showed the names moving together far more than she assumed. She rebalanced toward defensive equities and macro hedges, and the portfolio's real diversification improved.</p></div>
+<p><strong>Why use it.</strong> Concentration hides in correlation. Two holdings with a high correlation coefficient ρ are, for risk purposes, close to one bet.</p>
+<ul><li>Spot hidden concentration</li><li>Choose hedges that truly move differently</li><li>Check that a diversified list is diversified</li></ul>
+</div>
+</section>
+
+<section id="m3" class="ch block" style="--c:#7c3aed">
+<div class="n">3</div>
+<div>
+<h2>Modern portfolio theory and the efficient frontier</h2>
+<p class="tool">Tool: efficient frontier and optimal weights. Audience: asset allocation portfolio managers.</p>
+<p>For each level of risk there is a highest-return mix of assets. Those mixes form the efficient frontier. The tangency portfolio maximizes return per unit of risk above the risk-free rate.</p>
+<figure class="fig"><svg viewBox="0 0 300 200" role="img" aria-label="Random portfolios below an efficient frontier curve">
+<line x1="20" y1="186" x2="290" y2="186" stroke="currentColor" opacity=".35"/>
+<g id="cloud"></g>
+<path class="draw" pathLength="1" d="M60 150Q120 40 270 26" fill="none" stroke="currentColor" stroke-width="3"/>
+<circle cx="60" cy="150" r="6" style="fill:var(--ink)"/>
+<circle cx="170" cy="50" r="7" fill="none" style="stroke:var(--ink)" stroke-width="2.5"/>
+<text class="sm" x="72" y="170">Min vol</text>
+<text class="lbl" x="182" y="72">Max Sharpe</text>
+<text class="sm" x="236" y="180">Risk</text>
+<text class="sm" x="8" y="14">Return</text>
+</svg><p>Dots are random weight combinations. The curve is the frontier.</p></figure>
+<div class="eq">max<sub>w</sub> (w<sup>T</sup>μ − r<sub>f</sub>) / √(w<sup>T</sup>Σw) &nbsp; subject to Σw<sub>i</sub> = 1, w<sub>i</sub> ≥ 0</div>
+<div class="case"><b>Case: Dr. Tariq Al-Mansoor, a $5 billion sovereign mandate</b><p>He simulates 5,000 random weight combinations, plots each by risk and return, and locates the tangency portfolio. The chart shows the real trade-off: a slightly lower Sharpe ratio can buy a meaningfully smaller drawdown, which matters more at this size.</p></div>
+<p><strong>Why use it.</strong> It turns an allocation debate into a visible choice between risk and return.</p>
+<ul><li>Strategic asset allocation</li><li>Setting a risk budget</li><li>Presenting trade-offs to an investment committee</li></ul>
+</div>
+</section>
+
+<section id="m4" class="ch block" style="--c:#be123c">
+<div class="n">4</div>
+<div>
+<h2>Risk analytics: VaR and CVaR</h2>
+<p class="tool">Tool: parametric and historical VaR, CVaR. Audience: risk officers.</p>
+<p>Standard deviation treats gains and losses alike and assumes a bell curve. VaR answers how bad a normal bad day is. CVaR answers how bad the average outcome is once losses pass that line.</p>
+<figure class="fig"><svg viewBox="0 0 300 200" role="img" aria-label="Normal return curve with the 5 percent tail shaded beyond VaR">
+<path id="tail" class="fade" fill="currentColor" fill-opacity=".35"/>
+<path id="bell" class="draw" pathLength="1" fill="none" stroke="currentColor" stroke-width="3"/>
+<line x1="216" y1="50" x2="216" y2="170" stroke="currentColor" stroke-dasharray="4 4"/>
+<line x1="10" y1="170" x2="290" y2="170" stroke="currentColor" opacity=".35"/>
+<text class="lbl" x="222" y="58">VaR 95%</text>
+<text class="sm" x="226" y="186">5% tail</text>
+<text class="sm" x="10" y="190">Daily return</text>
+</svg></figure>
+<div class="eq">VaR<sub>95</sub> = 1.645 × σ × V &nbsp; CVaR = E[L | L ≥ VaR]</div>
+<div class="case"><b>Case: Mei Lin, risk officer at a long/short equity fund</b><p>The board limit is a one-day 95% VaR of $200,000 on a $10 million book. With 1% daily volatility, parametric VaR is $164,500, inside the limit. Her CVaR, about $206,000, averages the losses beyond the 95% line and sits above it. She reports both, and treats the historical tail as the stress test that matters.</p></div>
+<p><strong>Why use it.</strong> VaR says where bad days begin. CVaR says how bad they get, which is the question boards increasingly ask.</p>
+<ul><li>Setting risk limits</li><li>Stress testing</li><li>Comparing parametric and historical estimates</li></ul>
+</div>
+</section>
+
+<section id="m5" class="ch block" style="--c:#b45309">
+<div class="n">5</div>
+<div>
+<h2>The Black-Litterman model</h2>
+<p class="tool">Tool: Black-Litterman posterior returns. Audience: global macro strategists.</p>
+<p>Raw expected returns produce extreme, concentrated portfolios. Black and Litterman start from market equilibrium implied by capitalization, then blend in your explicit views, weighted by your confidence.</p>
+<figure class="fig"><svg viewBox="0 0 300 200" role="img" aria-label="Prior, view and posterior return distributions">
+<line x1="10" y1="185" x2="290" y2="185" stroke="currentColor" opacity=".35"/>
+<path id="pr" class="draw" pathLength="1" fill="none" stroke="#64748b" stroke-width="2.5"/>
+<path id="vw" class="draw" pathLength="1" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+<path id="po" class="draw" pathLength="1" fill="none" stroke="currentColor" stroke-width="4"/>
+</svg><p>Grey: equilibrium prior. Amber: your view. Colored: the posterior.</p></figure>
+<div class="eq">Π = λΣw<sub>mkt</sub> &nbsp; E[R] = [(τΣ)<sup>−1</sup> + PᵀΩ<sup>−1</sup>P]<sup>−1</sup> [(τΣ)<sup>−1</sup>Π + PᵀΩ<sup>−1</sup>Q]</div>
+<div class="case"><b>Case: Lars Engström, global macro strategist</b><p>He starts from equilibrium. His house view is that a large technology stock beats a defensive healthcare stock by 2% next year, with moderate confidence. The posterior tilts toward that view in proportion to his confidence. A weak view produces a small tilt, not an all-in bet.</p></div>
+<p><strong>Why use it.</strong> It converts a subjective view into a disciplined, diversified allocation and makes the confidence parameter explicit.</p>
+<ul><li>Combine analyst views with market prices</li><li>Avoid corner solutions</li><li>Record which views drove which weights</li></ul>
+</div>
+</section>
+
+<section id="m6" class="ch block" style="--c:#15803d">
+<div class="n">6</div>
+<div>
+<h2>Factor investing and risk decomposition</h2>
+<p class="tool">Tool: factor betas and alpha by regression. Audience: quantitative analysts.</p>
+<p>Returns are largely exposures to common factors: the market, company size and value. A regression separates what a manager earns from known factors from what remains as alpha.</p>
+<figure class="fig"><svg viewBox="0 0 300 200" role="img" aria-label="Bar chart of factor exposures: market 1.20, size 0.40, value minus 0.30">
+<line x1="20" y1="170" x2="290" y2="170" stroke="currentColor" opacity=".35"/>
+<rect class="grow" x="50" y="50" width="54" height="120" rx="6" fill="currentColor"/>
+<rect class="grow" x="124" y="130" width="54" height="40" rx="6" fill="currentColor" style="animation-delay:.2s"/>
+<rect class="grow" x="198" y="140" width="54" height="30" rx="6" fill="#be123c" style="animation-delay:.4s"/>
+<text class="sm" x="77" y="190" text-anchor="middle">MKT 1.20</text>
+<text class="sm" x="151" y="190" text-anchor="middle">SMB 0.40</text>
+<text class="sm" x="225" y="190" text-anchor="middle">HML −0.30</text>
+</svg><p>Illustrative exposures. Bar height shows size. Red marks a negative tilt.</p></figure>
+<div class="eq">R<sub>i</sub> − R<sub>f</sub> = α + β<sub>MKT</sub>·MKT + β<sub>SMB</sub>·SMB + β<sub>HML</sub>·HML + ε</div>
+<div class="case"><b>Case: Kenji Sato, quant analyst at a pension consultancy</b><p>A fund advertises 4% a year of alpha. Kenji regresses its returns on the three factors. The market beta is 1.2, the size tilt 0.4, and the value tilt is negative. Once those exposures are controlled for, the alpha falls to about 0.8%. Most of the apparent skill was factor exposure the pension could buy far more cheaply.</p></div>
+<p><strong>Why use it.</strong> Factor decomposition shows whether a manager adds value or repackages risk.</p>
+<ul><li>Performance attribution</li><li>Building factor tilts on purpose</li><li>Testing whether a strategy survives factor adjustment</li></ul>
+</div>
+</section>
+
+<section id="m7" class="ch block" style="--c:#0f766e">
+<div class="n">7</div>
+<div>
+<h2>Monte Carlo simulation with geometric Brownian motion</h2>
+<p class="tool">Tool: simulated price paths. Audience: financial planners.</p>
+<p>One forecast is never enough. Geometric Brownian motion grows a price at an expected rate while random shocks scaled by volatility push it around. The percentiles of many simulated paths are what decision makers need.</p>
+<figure class="fig"><svg viewBox="0 0 300 200" role="img" aria-label="Fan of simulated wealth paths over thirty years">
+<g id="paths"></g>
+<text class="sm" x="10" y="196">Year 0</text>
+<text class="sm" x="262" y="196">Year 30</text>
+</svg><p>Log scale. Each line is one simulated path.</p>
+<button id="sim" type="button">Simulate 25 new paths</button></figure>
+<div class="eq">S<sub>t+Δt</sub> = S<sub>t</sub> · exp[(μ − σ²/2)Δt + σ√Δt · Z], Z ~ N(0,1)</div>
+<div class="case"><b>Case: Amara Okafor, financial planner</b><p>She models a $500,000 portfolio with a 7% expected return and 15% volatility over 30 years, running 10,000 paths. The median sits below the simple average projection, because volatility drags compounded growth. The 5th percentile makes the bad case concrete for her client.</p></div>
+<p><strong>Why use it.</strong> A single projection hides the range. Simulation shows the probability of outcomes you care about, such as running out of money.</p>
+<ul><li>Retirement planning</li><li>Option pricing</li><li>Scenario analysis</li></ul>
+</div>
+</section>
+
+<section id="m8" class="ch block" style="--c:#c2410c">
+<div class="n">8</div>
+<div>
+<h2>Algorithmic backtesting</h2>
+<p class="tool">Tool: strategy backtester with drawdown analysis. Audience: systematic traders.</p>
+<p>A backtest replays a rule on history. A moving-average crossover goes long when the short average is above the long one. A good curve can come from overfitting or from ignoring costs, so always check drawdown and net returns.</p>
+<figure class="fig"><svg viewBox="0 0 300 200" role="img" aria-label="Price line with a moving average and buy and sell signals">
+<path class="draw" pathLength="1" d="M10 118C40 70 70 170 100 110S160 40 190 90S250 170 290 80" fill="none" stroke="currentColor" stroke-width="2.5"/>
+<path class="draw" pathLength="1" d="M10 134C80 124 120 118 170 112S240 108 290 116" fill="none" stroke="#64748b" stroke-width="2"/>
+<circle class="fade" style="animation-delay:1.6s" cx="100" cy="110" r="6" fill="#15803d"/>
+<circle class="fade" style="animation-delay:2s" cx="190" cy="90" r="6" fill="#be123c"/>
+<text class="sm" x="108" y="104">Buy</text>
+<text class="sm" x="198" y="84">Sell</text>
+</svg><p>Colored line: price. Grey: moving average. Green and red: signals.</p></figure>
+<div class="eq">Signal<sub>t</sub> = +1 if SMA<sub>short</sub> &gt; SMA<sub>long</sub> &nbsp; MDD = min<sub>t</sub> (V<sub>t</sub> / max<sub>s≤t</sub> V<sub>s</sub> − 1)</div>
+<div class="case"><b>Case: Leo Park, systematic trader</b><p>He backtests a 50-day against 200-day crossover on a broad index over two decades. The rule sidesteps the deepest crashes but whipsaws in choppy markets. Add realistic transaction costs and much of the edge disappears. A strategy is only as good as its worst drawdown, net of costs.</p></div>
+<p><strong>Why use it.</strong> A backtest shows how a rule would have felt to live with, including the losing stretches that decide whether you keep following it.</p>
+<ul><li>Strategy research</li><li>Cost sensitivity</li><li>Drawdown and recovery analysis</li></ul>
+</div>
+</section>
+
+<section id="m9" class="ch block" style="--c:#a21caf">
+<div class="n">9</div>
+<div>
+<h2>Machine learning for alpha</h2>
+<p class="tool">Tool: machine-learning alpha signals with out-of-sample testing. Audience: ML quants.</p>
+<p>Machine learning captures non-linear patterns that linear models miss. Its danger is memorizing noise. Penalties keep parameters small, and validation must respect time: train on the past, test on the future, never shuffle.</p>
+<figure class="fig"><svg viewBox="0 0 300 200" role="img" aria-label="Time-ordered train and test split, and in-sample versus out-of-sample Sharpe">
+<rect x="10" y="12" width="196" height="24" rx="6" fill="currentColor" fill-opacity=".3"/>
+<rect x="210" y="12" width="80" height="24" rx="6" fill="#be123c" fill-opacity=".55"/>
+<text class="lbl" x="20" y="28">Train 70%</text>
+<text class="lbl" x="226" y="28">Test 30%</text>
+<line x1="20" y1="170" x2="290" y2="170" stroke="currentColor" opacity=".35"/>
+<rect class="grow" x="70" y="62" width="60" height="108" rx="6" fill="currentColor"/>
+<rect class="grow" x="190" y="156" width="60" height="14" rx="6" fill="#be123c" style="animation-delay:.3s"/>
+<text class="sm" x="100" y="188" text-anchor="middle">In-sample 3.1</text>
+<text class="sm" x="220" y="188" text-anchor="middle">Out-of-sample 0.4</text>
+</svg><p>Illustrative values. The split keeps time order.</p></figure>
+<div class="eq">min<sub>Θ</sub> (1/N) Σ (y<sub>i</sub> − f(x<sub>i</sub>; Θ))² + λ‖Θ‖²<sub>2</sub></div>
+<div class="case"><b>Case: Nadia Haddad, ML quant</b><p>She trains a random forest on forty technical and macro features. In-sample, the strategy shows a Sharpe ratio of 3.1, which looks extraordinary. Walk-forward out-of-sample it falls to about 0.4. She rebuilds the pipeline with time-ordered splits and a purge gap, and the smaller number is the one she trusts.</p></div>
+<p><strong>Why use it.</strong> Out-of-sample testing is the one test a model cannot cheat on.</p>
+<ul><li>Alpha signal generation</li><li>Regime classification</li><li>Volatility forecasting</li></ul>
+</div>
+</section>
+
+<section id="m10" class="ch block" style="--c:#0e7490">
+<div class="n">10</div>
+<div>
+<h2>Microstructure and high-frequency analytics</h2>
+<p class="tool">Tool: spread, mid-price and volume imbalance. Audience: execution traders.</p>
+<p>Microstructure explains how prices form, one order at a time. The spread is the cost of immediacy. Volume imbalance compares resting buy and sell interest and can hint at very short-term direction, though that edge decays fast.</p>
+<figure class="fig"><svg viewBox="0 0 300 200" role="img" aria-label="Order book ladder with asks above bids and a spread between them">
+<text class="sm" x="8" y="34">150.06</text><rect class="growx" x="70" y="18" width="35" height="22" rx="3" fill="#be123c"/>
+<text class="sm" x="8" y="64">150.04</text><rect class="growx" x="70" y="48" width="42" height="22" rx="3" fill="#be123c" style="animation-delay:.1s"/>
+<text class="sm" x="8" y="94">150.02</text><rect class="growx" x="70" y="78" width="63" height="22" rx="3" fill="#be123c" style="animation-delay:.2s"/>
+<text class="lbl" x="150" y="108" text-anchor="middle">Spread $0.04</text>
+<text class="sm" x="8" y="134">149.98</text><rect class="growx" x="70" y="118" width="105" height="22" rx="3" fill="#15803d"/>
+<text class="sm" x="8" y="164">149.96</text><rect class="growx" x="70" y="148" width="105" height="22" rx="3" fill="#15803d" style="animation-delay:.1s"/>
+<text class="sm" x="8" y="194">149.94</text><rect class="growx" x="70" y="178" width="70" height="22" rx="3" fill="#15803d" style="animation-delay:.2s"/>
+</svg><p>Illustrative ladder. Bid depth 800 against ask depth 400.</p></figure>
+<div class="eq">S<sub>t</sub> = P<sub>ask</sub> − P<sub>bid</sub> &nbsp; VI = (V<sub>bid</sub> − V<sub>ask</sub>) / (V<sub>bid</sub> + V<sub>ask</sub>) ∈ [−1, 1]</div>
+<div class="case"><b>Case: Ravi Desai, execution trader</b><p>He must sell 50,000 shares without moving the price. Imbalance is (800 − 400) / 1,200 = +0.33, so buyers are ready to absorb size. He posts passive sell orders on the ask side and works the order in pieces, instead of hitting the bid and paying the spread.</p></div>
+<p><strong>Why use it.</strong> Execution quality is measured in basis points. Knowing when liquidity is on your side saves real money.</p>
+<ul><li>Execution timing</li><li>Spread monitoring</li><li>Liquidity diagnostics</li></ul>
+</div>
+</section>
+
+<section id="m11" class="ch block" style="--c:#db2777">
+<div class="n">11</div>
+<div>
+<h2>Derivatives pricing and the volatility surface</h2>
+<p class="tool">Tool: option pricing, Greeks and implied volatility smile. Audience: derivatives desks.</p>
+<p>Options are priced by building a hedge. A call's value depends on spot, strike, time, rates and volatility. The Greeks measure sensitivity, and implied volatility plotted across strikes forms the smile.</p>
+<figure class="fig"><svg viewBox="0 0 300 200" role="img" aria-label="Implied volatility smile across strikes with a moving marker">
+<line x1="16" y1="170" x2="284" y2="170" stroke="currentColor" opacity=".35"/>
+<path class="draw" pathLength="1" d="M20 60Q150 190 280 60" fill="none" stroke="currentColor" stroke-width="3"/>
+<circle r="5" style="fill:var(--ink)"><animateMotion dur="5s" repeatCount="indefinite" path="M20 60Q150 190 280 60Q150 190 20 60"/></circle>
+<text class="sm" x="16" y="188">Low strike</text>
+<text class="sm" x="118" y="188">At the money</text>
+<text class="sm" x="222" y="188">High strike</text>
+<text class="sm" x="10" y="20">Implied vol</text>
+</svg></figure>
+<div class="eq">C = S·N(d₁) − K·e<sup>−rT</sup>·N(d₂) &nbsp; d₁ = [ln(S/K) + (r + σ²/2)T] / (σ√T) &nbsp; d₂ = d₁ − σ√T</div>
+<div class="eq">Δ = N(d₁) &nbsp; Γ = N′(d₁) / (Sσ√T) &nbsp; Vega = S√T·N′(d₁)</div>
+<div class="case"><b>Case: Sofia Marin, derivatives desk</b><p>Spot and strike are both $100, the rate is 5%, volatility 20%, and maturity one year. The model prices the call at $10.45 and delta at 0.64. She buys 0.64 shares for every call she sold to stay hedged. Gamma tells her how fast that hedge drifts, so she rebalances as the stock moves.</p></div>
+<p><strong>Why use it.</strong> Pricing without hedge ratios is incomplete. The Greeks tell you what to trade to stay neutral.</p>
+<ul><li>Option pricing</li><li>Delta and gamma hedging</li><li>Volatility surface analysis</li></ul>
+</div>
+</section>
+
+<section id="m12" class="ch block" style="--c:#15803d">
+<div class="n">12</div>
+<div>
+<h2>Fixed income: bond pricing and duration</h2>
+<p class="tool">Tool: bond pricing, Macaulay and modified duration. Audience: fixed-income portfolio managers.</p>
+<p>A bond is a stream of cash flows discounted at its yield. Price and yield move in opposite directions along a convex curve. Modified duration gives the approximate percentage price change for a one-point move in yield.</p>
+<figure class="fig"><svg viewBox="0 0 300 200" role="img" aria-label="Convex price-yield curve with a moving marker">
+<path class="draw" pathLength="1" d="M20 30C90 60 150 140 280 165" fill="none" stroke="currentColor" stroke-width="3"/>
+<circle r="6" style="fill:var(--ink)"><animateMotion dur="6s" repeatCount="indefinite" path="M20 30C90 60 150 140 280 165C150 140 90 60 20 30"/></circle>
+<text class="sm" x="118" y="38">Price falls as yield rises</text>
+<text class="sm" x="236" y="190">Yield</text>
+<text class="sm" x="10" y="18">Price</text>
+</svg></figure>
+<div class="eq">P = Σ<sub>t=1..n</sub> C/(1+y)<sup>t</sup> + F/(1+y)<sup>n</sup> &nbsp; D<sub>mod</sub> = D<sub>mac</sub> / (1+y)</div>
+<div class="case"><b>Case: Oliver Brandt, fixed-income manager at a pension fund</b><p>He holds a 10-year bond with a 5% annual coupon and $100 face value, priced at a 4% yield. Its price is $108.11, Macaulay duration is 8.19 years and modified duration is 7.88. If yields rise one point, the price falls about 7.9%. Ahead of an expected rate rise, he shortens duration to cut that exposure.</p></div>
+<p><strong>Why use it.</strong> Duration turns a rate forecast into a dollar risk, the language of liability matching.</p>
+<ul><li>Rate-risk management</li><li>Immunizing liabilities</li><li>Comparing bond portfolios</li></ul>
+</div>
+</section>
+
+<section id="m13" class="ch block" style="--c:#a16207">
+<div class="n">13</div>
+<div>
+<h2>Crypto and DeFi: automated market makers</h2>
+<p class="tool">Tool: impermanent loss calculator. Audience: DeFi liquidity providers.</p>
+<p>Decentralized exchanges price tokens with a formula, not an order book. In a constant-product pool the product of reserves stays fixed, so the pool rebalances as prices move. Providers earn fees, but can end up worth less than if they had simply held.</p>
+<figure class="fig"><svg viewBox="0 0 300 200" role="img" aria-label="Impermanent loss curve against price ratio, marked at a doubling">
+<line x1="16" y1="170" x2="290" y2="170" stroke="currentColor" opacity=".35"/>
+<path class="draw" pathLength="1" d="M20 67Q38 30 57 30Q95 30 131 67Q170 105 206 117Q245 135 280 160" fill="none" stroke="currentColor" stroke-width="3"/>
+<circle class="fade" style="animation-delay:1.6s;fill:var(--ink)" cx="131" cy="67" r="6"/>
+<text class="lbl" x="142" y="58">ETH doubles: −5.7%</text>
+<text class="sm" x="150" y="22">Zero loss at r = 1</text>
+<text class="sm" x="16" y="188">Price ratio r from 0.5 to 4</text>
+</svg></figure>
+<div class="eq">x · y = k &nbsp; IL(r) = 2√r / (1 + r) − 1, where r = P<sub>new</sub> / P<sub>initial</sub></div>
+<div class="case"><b>Case: Yusuf Rahman, DeFi liquidity provider</b><p>He deposits $10,000 of ETH and $10,000 of USDC into a pool. ETH doubles. The pool is now worth $28,284, while simply holding would be worth $30,000. Impermanent loss is 5.7%, or $1,716. Fees must exceed that loss for providing liquidity to pay off, so he checks fee income against this break-even first.</p></div>
+<p><strong>Why use it.</strong> Liquidity provision is an options-like position. You need the loss formula to know whether fees are enough.</p>
+<ul><li>Break-even analysis for pools</li><li>Pool selection</li><li>DeFi risk monitoring</li></ul>
+</div>
+</section>
+
+<section class="block">
+<h2>Before you trust a result</h2>
+<p>Backtests, simulations and models are instruments for thinking, not promises. Real trading adds transaction costs, data errors, regulation and regime change. The best quants ask what would make a result false, then test exactly that. This book is educational and is not investment advice.</p>
+</section>
+
+</main>
+
+<script>
+const NS="http://www.w3.org/2000/svg",$=i=>document.getElementById(i);
+const add=(g,t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);g.appendChild(e);return e};
+const yAt=(x,m,s,H,b)=>b-H*Math.exp(-((x-m)**2)/(2*s*s));
+const bell=(m,s,H,x0,x1,b)=>{let d="M"+x0+" "+yAt(x0,m,s,H,b).toFixed(1);for(let x=x0+4;x<=x1;x+=4)d+=" L"+x+" "+yAt(x,m,s,H,b).toFixed(1);return d};
+[[1,.85,.7],[.85,1,.75],[.7,.75,1]].forEach((row,r)=>row.forEach((v,c)=>add($("hm"),"rect",{x:200+c*25,y:118+r*25,width:22,height:22,rx:4,fill:"currentColor","fill-opacity":v,class:"fade",style:`animation-delay:${((r*3+c)*.08).toFixed(2)}s`})));
+for(let i=0;i<60;i++){const x=60+Math.random()*200,lo=156-.61*(x-60),y=lo+Math.random()*(176-lo);add($("cloud"),"circle",{cx:x.toFixed(1),cy:y.toFixed(1),r:3,fill:"currentColor","fill-opacity":.45,class:"fade",style:`animation-delay:${(i*.02).toFixed(2)}s`})}
+$("tail").setAttribute("d",bell(150,40,120,216,290,170)+" L290 170 L216 170Z");
+$("bell").setAttribute("d",bell(150,40,120,10,290,170));
+$("pr").setAttribute("d",bell(110,40,70,10,290,185));
+$("vw").setAttribute("d",bell(190,25,112,10,290,185));
+$("po").setAttribute("d",bell(167.5,21.2,132,10,290,185));
+const yS=s=>Math.max(8,Math.min(190,190-38*Math.log(s/40)));
+function gbm(){const g=$("paths");g.innerHTML="";for(let p=0;p<25;p++){let s=100,d="M10 "+yS(s).toFixed(1);for(let t=1;t<=360;t++){const z=Math.sqrt(-2*Math.log(Math.random()||1e-9))*Math.cos(2*Math.PI*Math.random());s*=Math.exp((.07-.15*.15/2)/12+.15*Math.sqrt(1/12)*z);d+=" L"+(10+t*.8).toFixed(1)+" "+yS(s).toFixed(1)}add(g,"path",{d:d,fill:"none",stroke:"currentColor","stroke-opacity":.35,"stroke-width":1.5,class:"draw",pathLength:1})}}
+gbm();$("sim").onclick=gbm;
+</script>
+</body>
+</html>"""
+
+# ==========================================
 # PAGE CONFIGURATION & 3D GLASSMORPHISM THEME
 # ==========================================
 st.set_page_config(
@@ -712,8 +1130,47 @@ def render_custom_bulk_upload_screener():
 
 
 # ==========================================
-# TOP GLOBAL TELEMETRY BAR & REAL-TIME STREAMER
+# STREAMLIT NAVIGATION & UI MODULES (13 MODULES)
 # ==========================================
+st.sidebar.title("⚡ Quantitative Suite")
+
+# User Manual Button & State Management
+if "show_user_manual" not in st.session_state:
+    st.session_state.show_user_manual = False
+
+if st.sidebar.button("📖 User Manual", use_container_width=True):
+    st.session_state.show_user_manual = not st.session_state.show_user_manual
+
+if st.session_state.show_user_manual:
+    st.sidebar.info("📖 User Manual Mode Active")
+
+app_mode = st.sidebar.selectbox("Select Engine Module", [
+    "1. Magic Formula Screener",
+    "2. McKinsey Key Value Driver DCF",
+    "3. Economic Profitability & EVA",
+    "4. Momentum Filter Rule Scanner",
+    "5. Kelly Criterion Allocator",
+    "6. Black-Litterman Macro Allocation Matrix",
+    "7. AURA-AEGIS Geopolitical Risk Engine",
+    "8. CHRONOS-LIQUIDITY Dark Pool & FIX DMA Router",
+    "9. NEMESIS-ALPHA Behavioral Contagion Control",
+    "10. GPU-Accelerated Macro Stress Tests & Monte Carlo VaR",
+    "11. Alpha & Capital Preservation Impact Analytics",
+    "12. Bulk Custom Portfolio Uploader",
+    "13. Enterprise Redis / WebSocket Telemetry"
+])
+st.sidebar.caption("Institutional Quantitative Suite | Real-Time Enabled")
+
+# TOP GLOBAL TELEMETRY BAR & REAL-TIME STREAMER
+if st.session_state.get("show_user_manual", False):
+    st.header("📖 Quantitative Investment Suite: Masterclass User Manual")
+    col_close, _ = st.columns([2, 10])
+    if col_close.button("✖️ Close User Manual"):
+        st.session_state.show_user_manual = False
+        st.rerun()
+    components.html(USER_MANUAL_HTML, height=1200, scrolling=True)
+    st.markdown("---")
+
 st.markdown("### 🌐 Global Asset Management & Sovereign Telemetry (Aladdin Engine)")
 col_t1, col_t2, col_t3, col_t4 = st.columns(4)
 col_t1.metric("Assets Under Management", "$548.25B", "+2.4% MoM")
@@ -748,27 +1205,6 @@ def render_live_ticker_stream(raw_input):
 
 render_live_ticker_stream(stream_input)
 st.markdown("---")
-
-# ==========================================
-# STREAMLIT NAVIGATION & UI MODULES (13 MODULES)
-# ==========================================
-st.sidebar.title("⚡ Quantitative Suite")
-app_mode = st.sidebar.selectbox("Select Engine Module", [
-    "1. Magic Formula Screener",
-    "2. McKinsey Key Value Driver DCF",
-    "3. Economic Profitability & EVA",
-    "4. Momentum Filter Rule Scanner",
-    "5. Kelly Criterion Allocator",
-    "6. Black-Litterman Macro Allocation Matrix",
-    "7. AURA-AEGIS Geopolitical Risk Engine",
-    "8. CHRONOS-LIQUIDITY Dark Pool & FIX DMA Router",
-    "9. NEMESIS-ALPHA Behavioral Contagion Control",
-    "10. GPU-Accelerated Macro Stress Tests & Monte Carlo VaR",
-    "11. Alpha & Capital Preservation Impact Analytics",
-    "12. Bulk Custom Portfolio Uploader",
-    "13. Enterprise Redis / WebSocket Telemetry"
-])
-st.sidebar.caption("Institutional Quantitative Suite | Real-Time Enabled")
 
 # MODULE 1
 if app_mode == "1. Magic Formula Screener":
@@ -1175,7 +1611,6 @@ elif app_mode == "10. GPU-Accelerated Macro Stress Tests & Monte Carlo VaR":
     st.header("GPU-Accelerated Macro Stress Tests & Monte Carlo VaR Simulation")
     st.markdown("Leverages **CuPy CUDA Kernel Acceleration** (with automatic CPU NumPy fallback) for 100,000+ path parallelized risk pricing.")
 
-    # Check if CuPy can actually talk to a GPU device right now
     gpu_active = False
     if CUPY_AVAILABLE:
         try:
