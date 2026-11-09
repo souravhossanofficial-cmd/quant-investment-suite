@@ -1168,15 +1168,26 @@ elif app_mode == "9. NEMESIS-ALPHA Behavioral Contagion Control":
         fig_g.update_layout(template="plotly_dark", height=280)
         st.plotly_chart(fig_g, use_container_width=True)
 
-# MODULE 10 (GPU-ACCELERATED MONTE CARLO - PHASE 2)
+# ==========================================
+# MODULE 10: MONTE CARLO VAR (AUTO GPU/CPU FALLBACK)
+# ==========================================
 elif app_mode == "10. GPU-Accelerated Macro Stress Tests & Monte Carlo VaR":
     st.header("GPU-Accelerated Macro Stress Tests & Monte Carlo VaR Simulation")
-    st.markdown("Leverages **Phase 2 CuPy CUDA Kernel Acceleration** (with automatic CPU NumPy fallback) for 100,000+ path parallelized risk pricing.")
+    st.markdown("Leverages **CuPy CUDA Kernel Acceleration** (with automatic CPU NumPy fallback) for 100,000+ path parallelized risk pricing.")
 
+    # Check if CuPy can actually talk to a GPU device right now
+    gpu_active = False
     if CUPY_AVAILABLE:
+        try:
+            cp.cuda.Device(0).compute_capability()
+            gpu_active = True
+        except Exception:
+            gpu_active = False
+
+    if gpu_active:
         st.success("🟢 NVIDIA CUDA GPU Accelerated Kernel Active (CuPy Connected)")
     else:
-        st.info("ℹ️ Running via Optimized CPU NumPy Vectorization (Install CuPy for GPU acceleration)")
+        st.info("ℹ️ Running via Optimized CPU NumPy Vectorization (Cloud CPU Environment Detected)")
 
     yield_spike_bps = st.sidebar.slider("Yield Curve Spike (bps)", 50, 400, 200, 25)
     liquidity_haircut_pct = st.sidebar.slider("Liquidity Haircut (%)", 5, 50, 25, 5)
@@ -1202,7 +1213,7 @@ elif app_mode == "10. GPU-Accelerated Macro Stress Tests & Monte Carlo VaR":
     st.subheader("Monte Carlo VaR & Expected Shortfall Simulation (100,000 Parallel Paths)")
     
     start_mc = time.perf_counter()
-    if CUPY_AVAILABLE:
+    if gpu_active:
         mu_gpu = cp.asarray(mu_bl * (30/252))
         cov_gpu = cp.asarray(sigma_bl * (30/252))
         weights_gpu = cp.asarray(w_bl)
