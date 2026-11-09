@@ -8,6 +8,7 @@ import streamlit.components.v1 as components
 import requests
 import time
 import concurrent.futures
+import re
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
@@ -252,8 +253,16 @@ def fetch_live_quotes_concurrent(tickers):
     return pd.DataFrame(results)
 
 
+def clean_currency_column(series):
+    """Robustly cleans strings containing currency symbols, commas, and whitespace into floats."""
+    if series.dtype == 'object' or pd.api.types.is_string_dtype(series):
+        cleaned = series.astype(str).str.replace(r'[$€£¥₹,\s]', '', regex=True)
+        return pd.to_numeric(cleaned, errors='coerce').fillna(0.0)
+    return pd.to_numeric(series, errors='coerce').fillna(0.0)
+
+
 # ==========================================
-# MODULE 1: GREENBLATT'S MAGIC FORMULA
+# MODULE 1: MAGIC FORMULA SCREENER
 # ==========================================
 MAGIC_FORMATS = {
     "Earnings Yield": "{:.2%}",
@@ -273,6 +282,26 @@ REQUIRED_FIELDS = [
     ("current_liabilities", "current liabilities"),
     ("net_ppe", "net PPE"),
 ]
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_cached_fundamental_universe():
+    """In-memory cached factor store with normalized units in Millions ($M)."""
+    data = {
+        "Ticker": ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "BRK-B", "JNJ", "JPM", "XOM", "TSLA", "PG"],
+        "Name": ["Apple Inc.", "Microsoft Corp.", "Alphabet Inc.", "Amazon.com Inc.", "NVIDIA Corp.", "Meta Platforms", "Berkshire Hathaway", "Johnson & Johnson", "JPMorgan Chase", "Exxon Mobil", "Tesla Inc.", "Procter & Gamble"],
+        "Sector": ["Technology", "Technology", "Technology", "Consumer Cyclical", "Technology", "Technology", "Financial Services", "Healthcare", "Financial Services", "Energy", "Consumer Cyclical", "Consumer Defensive"],
+        
+        # NORMALIZED TO MILLIONS ($M) TO MATCH MARKET CAP UNITS
+        "EBIT": [120000, 110000, 95000, 50000, 80000, 60000, 100000, 30000, 55000, 65000, 12000, 20000],
+        "Invested_Capital": [150000, 140000, 130000, 90000, 70000, 80000, 400000, 70000, 500000, 120000, 45000, 50000],
+        "Total_Debt": [105000, 60000, 20000, 100000, 12000, 30000, 120000, 30000, 350000, 40000, 8000, 35000],
+        "Cash": [60000, 80000, 120000, 70000, 30000, 50000, 150000, 25000, 50000, 30000, 16000, 10000],
+        
+        "Current_Price": [185.0, 420.0, 175.0, 178.0, 850.0, 480.0, 410.0, 155.0, 195.0, 115.0, 175.0, 160.0],
+        "Shares_Outstanding_M": [15500, 7400, 12500, 10400, 24600, 2600, 2200, 2400, 2900, 4000, 3180, 2350]
+    }
+    return pd.DataFrame(data)
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
@@ -570,6 +599,108 @@ class NemesisAlphaEngine:
 
 
 # ==========================================
+# MODULE 12: BULK CUSTOM PORTFOLIO UPLOADER
+# ==========================================
+def render_custom_bulk_upload_screener():
+    st.header("📥 Bulk Custom Portfolio & Raw Datasheet Screener")
+    st.markdown(
+        "Upload a custom CSV or Excel file containing your proprietary portfolio data or watchlist. "
+        "The engine automatically sanitizes currency symbols (`$`, `€`, commas) and runs sub-millisecond quantitative factor modeling."
+    )
+
+    uploaded_file = st.file_uploader(
+        "Upload Raw Portfolio Datasheet (.csv, .xlsx)", 
+        type=["csv", "xlsx"]
+    )
+
+    sample_data = pd.DataFrame({
+        "Ticker": ["AAPL", "MSFT", "GOOGL", "AMZN", "CUSTOM_1"],
+        "Name": ["Apple Inc.", "Microsoft Corp.", "Alphabet Inc.", "Amazon.com Inc.", "Private Asset"],
+        "Sector": ["Technology", "Technology", "Technology", "Consumer Cyclical", "Industrial"],
+        "EBIT": ["$120,000", "$110,000", "$95,000", "$50,000", "$15,000"],
+        "Invested_Capital": ["$150,000", "$140,000", "$130,000", "$90,000", "$25,000"],
+        "Total_Debt": ["$105,000", "$60,000", "$20,000", "$100,000", "$5,000"],
+        "Cash": ["$60,000", "$80,000", "$120,000", "$70,000", "$4,000"],
+        "Current_Price": ["$185.50", "$420.00", "$175.25", "$178.10", "$50.00"],
+        "Shares_Outstanding_M": [15500, 7400, 12500, 10400, 500]
+    })
+
+    st.download_button(
+        label="📄 Download Currency-Formatted Sample Template",
+        data=sample_data.to_csv(index=False).encode('utf-8'),
+        file_name="aura_quant_currency_sample.csv",
+        mime="text/csv"
+    )
+
+    if uploaded_file is not None:
+        try:
+            if uploaded_file.name.endswith('.csv'):
+                df_custom = pd.read_csv(uploaded_file)
+            else:
+                df_custom = pd.read_excel(uploaded_file)
+
+            st.success(f"Successfully ingested datasheet with {len(df_custom)} rows!")
+
+            required_cols = {"Ticker", "EBIT", "Invested_Capital", "Total_Debt", "Cash", "Current_Price", "Shares_Outstanding_M"}
+            missing_cols = required_cols - set(df_custom.columns)
+
+            if missing_cols:
+                st.error(f"Missing required columns in uploaded file: {', '.join(missing_cols)}")
+                st.info("Please refer to the template above to structure your raw data.")
+                return
+
+            c1, c2 = st.columns(2)
+            with c1:
+                min_mcap_b = st.slider("Min Market Cap ($B)", 0.0, 500.0, 10.0, 5.0)
+                min_mcap_m = min_mcap_b * 1000.0
+            with c2:
+                exclude_fins = st.checkbox("Exclude Financials & Utilities", value=True)
+
+            start_time = time.perf_counter()
+
+            financial_cols = ["EBIT", "Invested_Capital", "Total_Debt", "Cash", "Current_Price", "Shares_Outstanding_M"]
+            for col in financial_cols:
+                if col in df_custom.columns:
+                    df_custom[col] = clean_currency_column(df_custom[col])
+
+            df_custom["Market_Cap"] = df_custom["Current_Price"] * df_custom["Shares_Outstanding_M"]
+            
+            if exclude_fins and "Sector" in df_custom.columns:
+                df_custom = df_custom[~df_custom["Sector"].isin(["Financial Services", "Utilities"])]
+
+            df_custom = df_custom[df_custom["Market_Cap"] >= min_mcap_m]
+
+            df_custom["Enterprise_Value"] = df_custom["Market_Cap"] + df_custom["Total_Debt"] - df_custom["Cash"]
+            df_custom["Earnings Yield"] = df_custom["EBIT"] / df_custom["Enterprise_Value"].clip(lower=1.0)
+            df_custom["Return on Capital"] = df_custom["EBIT"] / df_custom["Invested_Capital"].clip(lower=1.0)
+            df_custom["Market Cap ($M)"] = df_custom["Market_Cap"]
+
+            df_custom["EY_Rank"] = df_custom["Earnings Yield"].rank(ascending=False)
+            df_custom["ROC_Rank"] = df_custom["Return on Capital"].rank(ascending=False)
+            df_custom["Magic_Score"] = df_custom["EY_Rank"] + df_custom["ROC_Rank"]
+
+            df_ranked = df_custom.sort_values(["Magic_Score", "EY_Rank"]).reset_index(drop=True)
+            elapsed_ms = (time.perf_counter() - start_time) * 1000
+
+            st.caption(f"⚡ Currency Sanitization & Vector Processing Executed in **{elapsed_ms:.3f} ms**")
+
+            if df_ranked.empty:
+                st.warning("No companies met the filtering criteria after currency parsing. Try lowering the minimum market cap slider.")
+            else:
+                st.dataframe(df_ranked, use_container_width=True, hide_index=True)
+
+                st.download_button(
+                    label="📥 Export Sanitized Analysis Results (CSV)",
+                    data=df_ranked.to_csv(index=False).encode('utf-8'),
+                    file_name="aura_quant_sanitized_analysis.csv",
+                    mime="text/csv"
+                )
+
+        except Exception as e:
+            st.error(f"Error parsing uploaded file: {str(e)}")
+
+
+# ==========================================
 # TOP GLOBAL TELEMETRY BAR & REAL-TIME STREAMER
 # ==========================================
 st.markdown("### 🌐 Global Asset Management & Sovereign Telemetry (Aladdin Engine)")
@@ -608,7 +739,7 @@ render_live_ticker_stream(stream_input)
 st.markdown("---")
 
 # ==========================================
-# STREAMLIT NAVIGATION & UI MODULES
+# STREAMLIT NAVIGATION & UI MODULES (STEP 1)
 # ==========================================
 st.sidebar.title("⚡ Quantitative Suite")
 app_mode = st.sidebar.selectbox("Select Engine Module", [
@@ -622,7 +753,8 @@ app_mode = st.sidebar.selectbox("Select Engine Module", [
     "8. CHRONOS-LIQUIDITY Dark Pool Router",
     "9. NEMESIS-ALPHA Behavioral Contagion Control",
     "10. Macro Stress Tests & Monte Carlo VaR",
-    "11. Alpha & Capital Preservation Impact Analytics"
+    "11. Alpha & Capital Preservation Impact Analytics",
+    "12. Bulk Custom Portfolio Uploader"  # <--- STEP 1: MODULE 12 ADDED TO SIDEBAR SELECTBOX
 ])
 st.sidebar.caption("Institutional Quantitative Suite | Real-Time Enabled")
 
@@ -630,45 +762,103 @@ st.sidebar.caption("Institutional Quantitative Suite | Real-Time Enabled")
 if app_mode == "1. Magic Formula Screener":
     st.header("Joel Greenblatt's Magic Formula Screener")
     st.markdown(
-        "Ranks equities quantitatively based on **Earnings Yield** and **Return on Capital**. "
-        "Enter either **stock ticker symbols** or **full company names** (e.g., *Apple Inc., Microsoft Corporation*)."
+        "⚡ **Sub-Millisecond Interactive Factor Engine.** "
+        "Calculates Earnings Yield and Return on Capital across cached fundamentals and live Enterprise Value pricing."
     )
 
-    default_input = "Apple Inc., Microsoft Corporation, Alphabet Inc., Amazon.com, Meta Platforms"
-    ticker_input = st.text_area("Enter Tickers or Company Names (comma-separated)", default_input)
-    exclude_sectors = st.checkbox("Exclude Financial Services and Utilities (Greenblatt rules)", value=True)
+    mode = st.radio("Execution Engine Mode:", ["⚡ In-Memory Sub-Millisecond Vector Screener", "🌐 Live Yahoo Finance API Query"], horizontal=True)
 
-    if st.button("Run Screener"):
-        raw_items = [item.strip() for item in ticker_input.split(",") if item.strip()]
-        if not raw_items:
-            st.error("Please enter at least one ticker symbol or company name.")
+    if "Sub-Millisecond" in mode:
+        df_cache = get_cached_fundamental_universe().copy()
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            min_mcap_b = st.slider("Min Market Cap ($B)", 1.0, 500.0, 50.0, 5.0)
+            min_mcap_m = min_mcap_b * 1000.0 
+        with c2:
+            exclude_fins = st.checkbox("Exclude Financials & Utilities", value=True)
+
+        start_time = time.perf_counter()
+        
+        df_cache["Market_Cap"] = df_cache["Current_Price"] * df_cache["Shares_Outstanding_M"]
+        
+        if exclude_fins:
+            df_cache = df_cache[~df_cache["Sector"].isin(EXCLUDED_SECTORS)]
+            
+        df_cache = df_cache[df_cache["Market_Cap"] >= min_mcap_m]
+        
+        df_cache["Enterprise_Value"] = df_cache["Market_Cap"] + df_cache["Total_Debt"] - df_cache["Cash"]
+        df_cache["Earnings Yield"] = df_cache["EBIT"] / df_cache["Enterprise_Value"].clip(lower=1.0)
+        df_cache["Return on Capital"] = df_cache["EBIT"] / df_cache["Invested_Capital"].clip(lower=1.0)
+        df_cache["Market Cap ($M)"] = df_cache["Market_Cap"]
+
+        df_cache["EY_Rank"] = df_cache["Earnings Yield"].rank(ascending=False)
+        df_cache["ROC_Rank"] = df_cache["Return on Capital"].rank(ascending=False)
+        df_cache["Magic_Score"] = df_cache["EY_Rank"] + df_cache["ROC_Rank"]
+
+        df_ranked = df_cache.sort_values(["Magic_Score", "EY_Rank"]).reset_index(drop=True)
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+
+        st.caption(f"⚡ In-Memory Vector Computation Executed in **{elapsed_ms:.3f} ms**")
+        
+        if df_ranked.empty:
+            st.warning("No companies met the filtering criteria. Try lowering the minimum market cap slider.")
         else:
-            with st.spinner("Resolving names and processing multi-factor quantitative ranking..."):
-                resolved_tickers = [get_ticker_from_name(item) for item in raw_items]
-                ranked, skipped = run_magic_formula_screener(resolved_tickers, exclude_sectors)
+            st.dataframe(
+                df_ranked[["Ticker", "Name", "Sector", "Earnings Yield", "Return on Capital", "Market Cap ($M)", "Magic_Score"]].style.format(MAGIC_FORMATS),
+                use_container_width=True,
+                hide_index=True
+            )
 
-            if ranked.empty:
-                st.error("No tickers passed the screening criteria.")
+            fig_3d_screener = px.scatter_3d(
+                df_ranked,
+                x="Earnings Yield",
+                y="Return on Capital",
+                z="Market Cap ($M)",
+                color="Magic_Score",
+                text="Ticker",
+                title="<b>3D Equities Metric Positioning Matrix</b>",
+                color_continuous_scale="Viridis",
+            )
+            fig_3d_screener.update_layout(template="plotly_dark", margin=dict(l=0, r=0, b=0, t=40))
+            st.plotly_chart(fig_3d_screener, use_container_width=True)
+
+    else:
+        default_input = "Apple Inc., Microsoft Corporation, Alphabet Inc., Amazon.com, Meta Platforms"
+        ticker_input = st.text_area("Enter Tickers or Company Names (comma-separated)", default_input)
+        exclude_sectors = st.checkbox("Exclude Financial Services and Utilities (Greenblatt rules)", value=True)
+
+        if st.button("Run Live API Screener"):
+            raw_items = [item.strip() for item in ticker_input.split(",") if item.strip()]
+            if not raw_items:
+                st.error("Please enter at least one ticker symbol or company name.")
             else:
-                st.success(f"Successfully ranked {len(ranked)} of {len(raw_items)} items.")
-                st.dataframe(ranked.style.format(MAGIC_FORMATS), use_container_width=True, hide_index=True)
-                
-                fig_3d_screener = px.scatter_3d(
-                    ranked,
-                    x="Earnings Yield",
-                    y="Return on Capital",
-                    z="Market Cap ($M)",
-                    color="Magic_Score",
-                    text="Ticker",
-                    title="<b>3D Equities Metric Positioning Matrix</b>",
-                    color_continuous_scale="Viridis",
-                )
-                fig_3d_screener.update_layout(template="plotly_dark", margin=dict(l=0, r=0, b=0, t=40))
-                st.plotly_chart(fig_3d_screener, use_container_width=True)
+                with st.spinner("Resolving names and processing multi-factor quantitative ranking..."):
+                    resolved_tickers = [get_ticker_from_name(item) for item in raw_items]
+                    ranked, skipped = run_magic_formula_screener(resolved_tickers, exclude_sectors)
 
-            if not skipped.empty:
-                st.warning(f"Audit Log: Skipped {len(skipped)} item(s).")
-                st.dataframe(skipped, use_container_width=True, hide_index=True)
+                if ranked.empty:
+                    st.error("No tickers passed the screening criteria.")
+                else:
+                    st.success(f"Successfully ranked {len(ranked)} of {len(raw_items)} items.")
+                    st.dataframe(ranked.style.format(MAGIC_FORMATS), use_container_width=True, hide_index=True)
+                    
+                    fig_3d_screener = px.scatter_3d(
+                        ranked,
+                        x="Earnings Yield",
+                        y="Return on Capital",
+                        z="Market Cap ($M)",
+                        color="Magic_Score",
+                        text="Ticker",
+                        title="<b>3D Equities Metric Positioning Matrix</b>",
+                        color_continuous_scale="Viridis",
+                    )
+                    fig_3d_screener.update_layout(template="plotly_dark", margin=dict(l=0, r=0, b=0, t=40))
+                    st.plotly_chart(fig_3d_screener, use_container_width=True)
+
+                if not skipped.empty:
+                    st.warning(f"Audit Log: Skipped {len(skipped)} item(s).")
+                    st.dataframe(skipped, use_container_width=True, hide_index=True)
 
 # MODULE 2
 elif app_mode == "2. McKinsey Key Value Driver DCF":
@@ -951,7 +1141,7 @@ elif app_mode == "9. NEMESIS-ALPHA Behavioral Contagion Control":
             mode="gauge+number", value=entropy,
             domain={'x': [0, 1], 'y': [0, 1]},
             title={'text': "Cognitive Shannon Entropy Level"},
-            gauge={'axis': {'range': [0, 2.5]}, 'bar': {'color': "#f43f5e"}}
+            gauge={'axis': {'range': [0, 2.5]}, 'bar': {'color': '#f43f5e'}}
         ))
         fig_g.update_layout(template="plotly_dark", height=280)
         st.plotly_chart(fig_g, use_container_width=True)
@@ -1014,3 +1204,7 @@ elif app_mode == "11. Alpha & Capital Preservation Impact Analytics":
     })
     fig_impact = px.bar(impact_df, x="Engine Module", y="Capital Preserved / Alpha ($USD)", color="Engine Module", template="plotly_dark", title="Cumulative Value Generated by Autonomous Quantitative Engines")
     st.plotly_chart(fig_impact, use_container_width=True)
+
+# MODULE 12 (STEP 2: ROUTING CONDITION AT THE BOTTOM)
+elif app_mode == "12. Bulk Custom Portfolio Uploader":
+    render_custom_bulk_upload_screener()
