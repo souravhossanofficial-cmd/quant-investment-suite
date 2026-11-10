@@ -1221,6 +1221,64 @@ app_mode = st.sidebar.selectbox("Select Engine Module", [
 ])
 st.sidebar.caption("Institutional Quantitative Suite | Real-Time Enabled")
 
+# ==========================================
+# CONDITIONAL SIDEBAR SLIDERS (HIDDEN ON INDEPENDENT MODULES)
+# ==========================================
+if app_mode in [
+    "6. Black-Litterman Macro Allocation Matrix",
+    "10. GPU-Accelerated Macro Stress Tests & Monte Carlo VaR",
+    "11. Alpha & Capital Preservation Impact Analytics"
+]:
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🎛️ Portfolio Dials & Macro Views")
+    delta = st.sidebar.slider("Black-Litterman Risk Aversion (δ)", 1.0, 5.0, 3.0, 0.2)
+    tau = st.sidebar.slider("Prior Uncertainty Scaling (τ)", 0.01, 0.20, 0.05, 0.01)
+    omega_scale = st.sidebar.slider("View Uncertainty Multiplier (Ω Scale)", 0.1, 5.0, 1.0, 0.1)
+
+    view_1_return = st.sidebar.slider("View 1: EM vs. Global Equities Spread (%)", -5.0, 5.0, 2.5, 0.25) / 100.0
+    view_2_return = st.sidebar.slider("View 2: Global Sovereign Bond Return (%)", 0.0, 10.0, 3.8, 0.25) / 100.0
+    portfolio_aum = st.sidebar.number_input("Total Portfolio AUM ($USD)", value=500_000_000_000, step=10_000_000_000)
+else:
+    # Default fallback values for independent/other modules to prevent reference errors
+    delta, tau, omega_scale = 3.0, 0.05, 1.0
+    view_1_return, view_2_return = 0.025, 0.038
+    portfolio_aum = 500_000_000_000
+
+# SHARED PARAMETERS SETUP FOR OPTIMIZATION MODULES
+assets = ["Global Equities", "Emerging Markets", "Global Sovereign Bonds", "High Yield Credit", "Commodities"]
+mkt_caps = np.array([45000.0, 12000.0, 30000.0, 8000.0, 5000.0])
+w_mkt = mkt_caps / np.sum(mkt_caps)
+durations = np.array([1.2, 1.8, 7.5, 4.2, 0.0])
+
+cov_matrix = np.array([
+    [0.0324, 0.0210, 0.0040, 0.0150, 0.0180],
+    [0.0210, 0.0484, 0.0020, 0.0220, 0.0250],
+    [0.0040, 0.0020, 0.0064, 0.0050, 0.0010],
+    [0.0150, 0.0220, 0.0050, 0.0289, 0.0120],
+    [0.0180, 0.0250, 0.0010, 0.0120, 0.0625]
+])
+
+Pi = delta * (cov_matrix @ w_mkt)
+tau_sigma = tau * cov_matrix
+tau_sigma_inv = np.linalg.inv(tau_sigma)
+
+P = np.array([
+    [-1.0, 1.0, 0.0, 0.0, 0.0],
+    [ 0.0, 0.0, 1.0, 0.0, 0.0]
+])
+Q = np.array([view_1_return, view_2_return])
+
+Omega = np.diag(np.diag(P @ tau_sigma @ P.T)) * omega_scale
+Omega_inv = np.linalg.inv(Omega)
+
+M_inv = np.linalg.inv(tau_sigma_inv + P.T @ Omega_inv @ P)
+mu_bl = M_inv @ (tau_sigma_inv @ Pi + P.T @ Omega_inv @ Q)
+sigma_bl = cov_matrix + M_inv
+
+inv_sigma_bl = np.linalg.inv(sigma_bl)
+w_raw = (1.0 / delta) * (inv_sigma_bl @ mu_bl)
+w_bl = w_raw / np.sum(w_raw)
+
 # MODULE 1
 if app_mode == "1. Magic Formula Screener":
     st.header("Joel Greenblatt's Magic Formula Screener")
@@ -1439,52 +1497,8 @@ elif app_mode == "5. Kelly Criterion Allocator":
             col2.metric(label="Half Kelly Fraction ($0.5 \\times f^*$)", value=f"{f_opt * 50:.2f}%")
         st.info("Institutional Risk Advisory: Professional quantitative portfolios deploy Fractional Kelly sizing.")
 
-# SHARED PARAMETERS FOR MODULES 6-11
-assets = ["Global Equities", "Emerging Markets", "Global Sovereign Bonds", "High Yield Credit", "Commodities"]
-mkt_caps = np.array([45000.0, 12000.0, 30000.0, 8000.0, 5000.0])
-w_mkt = mkt_caps / np.sum(mkt_caps)
-durations = np.array([1.2, 1.8, 7.5, 4.2, 0.0])
-
-cov_matrix = np.array([
-    [0.0324, 0.0210, 0.0040, 0.0150, 0.0180],
-    [0.0210, 0.0484, 0.0020, 0.0220, 0.0250],
-    [0.0040, 0.0020, 0.0064, 0.0050, 0.0010],
-    [0.0150, 0.0220, 0.0050, 0.0289, 0.0120],
-    [0.0180, 0.0250, 0.0010, 0.0120, 0.0625]
-])
-
-delta = st.sidebar.slider("Black-Litterman Risk Aversion (δ)", 1.0, 5.0, 3.0, 0.2)
-tau = st.sidebar.slider("Prior Uncertainty Scaling (τ)", 0.01, 0.20, 0.05, 0.01)
-omega_scale = st.sidebar.slider("View Uncertainty Multiplier (Ω Scale)", 0.1, 5.0, 1.0, 0.1)
-
-view_1_return = st.sidebar.slider("View 1: EM vs. Global Equities Spread (%)", -5.0, 5.0, 2.5, 0.25) / 100.0
-view_2_return = st.sidebar.slider("View 2: Global Sovereign Bond Return (%)", 0.0, 10.0, 3.8, 0.25) / 100.0
-
-Pi = delta * (cov_matrix @ w_mkt)
-tau_sigma = tau * cov_matrix
-tau_sigma_inv = np.linalg.inv(tau_sigma)
-
-P = np.array([
-    [-1.0, 1.0, 0.0, 0.0, 0.0],
-    [ 0.0, 0.0, 1.0, 0.0, 0.0]
-])
-Q = np.array([view_1_return, view_2_return])
-
-Omega = np.diag(np.diag(P @ tau_sigma @ P.T)) * omega_scale
-Omega_inv = np.linalg.inv(Omega)
-
-M_inv = np.linalg.inv(tau_sigma_inv + P.T @ Omega_inv @ P)
-mu_bl = M_inv @ (tau_sigma_inv @ Pi + P.T @ Omega_inv @ Q)
-sigma_bl = cov_matrix + M_inv
-
-inv_sigma_bl = np.linalg.inv(sigma_bl)
-w_raw = (1.0 / delta) * (inv_sigma_bl @ mu_bl)
-w_bl = w_raw / np.sum(w_raw)
-
-portfolio_aum = st.sidebar.number_input("Total Portfolio AUM ($USD)", value=500_000_000_000, step=10_000_000_000)
-
 # MODULE 6
-if app_mode == "6. Black-Litterman Macro Allocation Matrix":
+elif app_mode == "6. Black-Litterman Macro Allocation Matrix":
     st.header("Black-Litterman Macroeconomic Optimization Matrix")
     st.markdown("Blends market equilibrium returns with explicit macroeconomic views to avoid MVO corner solutions.")
     c1, c2 = st.columns(2)
