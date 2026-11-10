@@ -180,12 +180,12 @@ animate();
 """
 components.html(particle_canvas, height=0, width=0)
 
-USER_MANUAL_HTML = """<!doctype html>
+BROCHURE_HTML = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Quantitative Investment Suite: Masterclass Tutorial</title>
+<title>Quantitative Investment Suite: Masterclass Brochure</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Serif:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
 <style>
@@ -254,7 +254,7 @@ button{margin-top:10px;font:600 14px "IBM Plex Sans",system-ui,sans-serif;color:
 </nav>
 
 <header class="wrap hero">
-<p class="kicker">Masterclass tutorial for the Quantitative Investment Suite</p>
+<p class="kicker">Masterclass brochure for the Quantitative Investment Suite</p>
 <h1>From hypothesis to risk-controlled portfolio</h1>
 <p class="lede">Thirteen modules, thirteen tools. Each one explains the mathematics, animates it, and follows a real-world case from start to finish.</p>
 <p class="by">Course director: Ivy League fintech chair and academic director</p>
@@ -604,7 +604,7 @@ $("pr").setAttribute("d",bell(110,40,70,10,290,185));
 $("vw").setAttribute("d",bell(190,25,112,10,290,185));
 $("po").setAttribute("d",bell(167.5,21.2,132,10,290,185));
 const yS=s=>Math.max(8,Math.min(190,190-38*Math.log(s/40)));
-function gbm(){const g=$("paths");g.innerHTML="";for(let p=0;p<25;p++){let s=100,d="M10 "+yS(s).toFixed(1);for(let t=1;t<=360;t++){const z=Math.sqrt(-2*Math.log(Math.random()||1e-9))*Math.cos(2*Math.PI*Math.random());s*=Math.exp((.07-.15*.15/2)/12+.15*Math.sqrt(1/12)*z);d+=" L"+(10+t*.8).toFixed(1)+" "+yS(s).toFixed(1)}add(g,"path",{d:d,fill:"none",stroke:"currentColor","stroke-opacity":.35,"stroke-width":1.5,class:"draw",pathLength:1})}}
+function gbm(){const g=$("paths");g.innerHTML="";for(let p=0;p<25;p++){let s=100,d="M10 "+yS(s).toFixed(1);for(let t=1;t<=360;t++){const z=Math.sqrt(-2*Math.log(Math.random()||1e-9))*Math.cos(2*Math.PI*Math.random());s*=Math.exp((.07-.15*.15/2)/12+.15*Math.sqrt(1/12)*z);d+=" L"+(10+t*.8).toFixed(1)+" "+yS(s).toFixed(1)}add(g,"path",{d:d,fill="none",stroke:"currentColor","stroke-opacity":.35,"stroke-width":1.5,class:"draw",pathLength:1})}}
 gbm();$("sim").onclick=gbm;
 </script>
 </body>
@@ -1145,13 +1145,17 @@ def render_custom_bulk_upload_screener():
 # ==========================================
 # TOP GLOBAL TELEMETRY BAR & REAL-TIME STREAMER
 # ==========================================
+if "show_user_manual" not in st.session_state:
+    st.session_state.show_user_manual = False
+
 if st.session_state.get("show_user_manual", False):
-    st.header("📖 Quantitative Investment Suite: Masterclass User Manual")
+    st.header("📖 Quantitative Investment Suite: Masterclass Brochure")
     col_close, _ = st.columns([2, 10])
-    if col_close.button("✖️ Close User Manual"):
+    def close_brochure():
         st.session_state.show_user_manual = False
-        st.rerun()
-    components.html(USER_MANUAL_HTML, height=1200, scrolling=True)
+    if col_close.button("✖️ Close Brochure", on_click=close_brochure, key="close_brochure_btn"):
+        pass
+    components.html(BROCHURE_HTML, height=1200, scrolling=True)
     st.markdown("---")
 
 st.markdown("### 🌐 Global Asset Management & Sovereign Telemetry (Aladdin Engine)")
@@ -1194,15 +1198,15 @@ st.markdown("---")
 # ==========================================
 st.sidebar.title("⚡ Quantitative Suite")
 
-# User Manual Button & State Management
-if "show_user_manual" not in st.session_state:
-    st.session_state.show_user_manual = False
-
-if st.sidebar.button("📖 User Manual", use_container_width=True):
+# Brochure Button & State Management with Instant Callback (`on_click`)
+def toggle_brochure():
     st.session_state.show_user_manual = not st.session_state.show_user_manual
 
+if st.sidebar.button("📖 Brochure", on_click=toggle_brochure, use_container_width=True):
+    pass
+
 if st.session_state.show_user_manual:
-    st.sidebar.info("📖 User Manual Mode Active")
+    st.sidebar.info("📖 Brochure Mode Active")
 
 app_mode = st.sidebar.selectbox("Select Engine Module", [
     "1. Magic Formula Screener",
